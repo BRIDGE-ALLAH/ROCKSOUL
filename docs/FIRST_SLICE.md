@@ -23,7 +23,7 @@ This slice connects a real local project to a durable mission, performs one boun
 - It does not modify, create, or delete files in the selected project.
 - It does not claim that the project is healthy, secure, correct, or fully understood.
 
-The inventory is bounded to 300 file entries and depth 12. A truncated inventory is explicitly marked. Permission errors are retained as bounded warnings rather than being represented as successful reads.
+The inventory is bounded to 2,000 total directory/file entries, 300 file records, and depth 12. A truncated inventory is explicitly marked. Permission errors are retained as bounded warnings rather than being represented as successful reads.
 
 ## Local storage
 
@@ -55,7 +55,7 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 
 - The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending.
 - No source-content reading or provider egress exists yet.
-- No action approval system exists because the Scout is metadata-only and read-only.
+- No tool-action approval system exists because the Scout is metadata-only and read-only. The only approval in this slice is the human decision to complete the mission after reviewing its inventory artifact.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
 - Platform validation is not complete. Windows is the first target; macOS/Linux need separate CI and runtime acceptance.
 - The GitHub CI workflow must pass before this slice is treated as build-verified.
