@@ -16,6 +16,10 @@ use sqlx::{
 };
 use uuid::Uuid;
 
+mod backup;
+
+pub use backup::{BackupManifest, BackupResult};
+
 use crate::{Artifact, Evidence, InspectionResult, Mission, Project, StoreError};
 
 const MAX_INVENTORY_FILES: usize = 300;
