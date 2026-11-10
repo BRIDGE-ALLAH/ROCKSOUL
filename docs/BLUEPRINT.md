@@ -38,7 +38,7 @@ As of 11 November 2026, merged `main` contains the first local-mission slice fro
 
 The first slice does not read source/document contents, call a provider, run a process, execute arbitrary tools, or write into the selected workspace. It is prototype code, not an installer-ready release.
 
-The Windows E2E lifecycle is tracked by [PR #3](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/3) and [P0-F01](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). Until its PR-triggered CI passes on the exact commit and the native picker is manually accepted, those behaviors remain unverified. See [FIRST_SLICE.md](FIRST_SLICE.md) and [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md).
+The Windows E2E lifecycle is tracked by [PR #3](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/3) and [P0-F01](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). Latest observed PR run [#42851122894](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42851122894) passed the Rust/UI jobs and created a native WebDriver session, but the Tauri service worker failed in `patchBrowserExecute` before the lifecycle assertions could run. Treat the native E2E and SQLite restoration as **unverified** until a PR-triggered run passes on one exact commit. The separate native shell folder-picker remains a manual gate owned by [P0-F02](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6). See [FIRST_SLICE.md](FIRST_SLICE.md) and [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md).
 
 ## 2. Core principles and invariants
 
