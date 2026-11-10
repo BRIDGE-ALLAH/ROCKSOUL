@@ -117,7 +117,7 @@ impl Store {
                     snapshot_created = true;
                     break;
                 }
-                Err(error) if is_sqlite_busy(&error) && attempt + 1 < BUSY_RETRY_LIMIT => {
+                Err(error) if should_retry_busy(&error, attempt) => {
                     tokio::time::sleep(BUSY_RETRY_DELAY * (attempt as u32 + 1)).await;
                 }
                 Err(error) => return Err(error.into()),
@@ -211,6 +211,10 @@ impl Store {
     }
 }
 
+fn should_retry_busy(error: &sqlx::Error, attempt: usize) -> bool {
+    is_sqlite_busy(error) && attempt + 1 < BUSY_RETRY_LIMIT
+}
+
 fn is_sqlite_busy(error: &sqlx::Error) -> bool {
     let sqlx::Error::Database(database_error) = error else {
         return false;
@@ -243,10 +247,11 @@ fn sha256_file(path: &Path) -> Result<String, StoreError> {
 
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, fs};
+    use std::{error::Error, fs, time::Duration};
 
     use serde_json::from_slice;
     use sha2::{Digest, Sha256};
+    use sqlx::{Connection, SqliteConnection, sqlite::{SqliteConnectOptions, SqliteJournalMode}};
     use tempfile::tempdir;
 
     use super::{BackupManifest, Store};
@@ -272,6 +277,13 @@ mod tests {
                 "All committed rows must be present in the verified snapshot.",
             )
             .await?;
+
+        let mut source_connection = store.pool.acquire().await?;
+        let journal_mode: String = sqlx::query_scalar("PRAGMA journal_mode")
+            .fetch_one(&mut *source_connection)
+            .await?;
+        assert_eq!(journal_mode.to_ascii_lowercase(), "wal");
+        drop(source_connection);
 
         let backup = store
             .create_backup(&temporary.path().join("backups"))
@@ -312,6 +324,13 @@ mod tests {
         // Open the snapshot as a separate local store and prove that the
         // project and mission committed to the source WAL are in the snapshot.
         let restored = Store::connect(&backup.database_path).await?;
+        let mut restored_connection = restored.pool.acquire().await?;
+        let restored_integrity: String = sqlx::query_scalar("PRAGMA integrity_check")
+            .fetch_one(&mut *restored_connection)
+            .await?;
+        assert_eq!(restored_integrity, "ok");
+        drop(restored_connection);
+
         let projects = restored.list_projects().await?;
         let missions = restored.list_missions(&project.id).await?;
         assert_eq!(projects.len(), 1);
@@ -320,6 +339,45 @@ mod tests {
         assert_eq!(missions[0].id, mission.id);
         assert_eq!(missions[0].title, "Verify online backup");
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn sqlite_busy_errors_are_detected_and_retry_budget_is_bounded()
+    -> Result<(), Box<dyn Error>> {
+        let temporary = tempdir()?;
+        let database = temporary.path().join("busy.sqlite3");
+        let options = SqliteConnectOptions::new()
+            .filename(&database)
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Delete);
+        let mut lock_owner = SqliteConnection::connect_with(&options).await?;
+        sqlx::query("CREATE TABLE lock_fixture (id INTEGER PRIMARY KEY)")
+            .execute(&mut lock_owner)
+            .await?;
+        sqlx::query("BEGIN EXCLUSIVE")
+            .execute(&mut lock_owner)
+            .await?;
+
+        let contender_options = SqliteConnectOptions::new()
+            .filename(&database)
+            .create_if_missing(false)
+            .journal_mode(SqliteJournalMode::Delete)
+            .busy_timeout(Duration::from_millis(10));
+        let mut contender = SqliteConnection::connect_with(&contender_options).await?;
+        let busy_error = sqlx::query("BEGIN IMMEDIATE")
+            .execute(&mut contender)
+            .await
+            .expect_err("the exclusive SQLite lock must reject a second writer");
+
+        assert!(super::is_sqlite_busy(&busy_error));
+        assert!(super::should_retry_busy(&busy_error, 0));
+        assert!(super::should_retry_busy(&busy_error, 1));
+        assert!(!super::should_retry_busy(&busy_error, 2));
+
+        contender.close().await?;
+        sqlx::query("ROLLBACK").execute(&mut lock_owner).await?;
+        lock_owner.close().await?;
         Ok(())
     }
 
