@@ -7,9 +7,9 @@
     "apps/desktop/ui"
   ],
   "scripts": {
-    "ui:dev": "bun --cwd apps/desktop/ui run dev",
-    "ui:build": "bun --cwd apps/desktop/ui run build",
-    "ui:check": "bun --cwd apps/desktop/ui run check",
+    "ui:dev": "cd apps/desktop/ui && bun run dev",
+    "ui:build": "cd apps/desktop/ui && bun run build",
+    "ui:check": "cd apps/desktop/ui && bun run check",
     "desktop:dev": "cd apps/desktop/src-tauri && bunx tauri dev",
     "desktop:build": "cd apps/desktop/src-tauri && bunx tauri build",
     "test:core": "cargo test -p rocksoul-core",
