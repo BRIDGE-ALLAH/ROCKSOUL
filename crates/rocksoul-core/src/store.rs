@@ -356,14 +356,14 @@ impl Store {
         }
 
         let artifact_id: Option<String> = sqlx::query_scalar(
-            "SELECT id FROM artifacts WHERE mission_id = ? ORDER BY created_at DESC LIMIT 1",
+            "SELECT id FROM artifacts WHERE mission_id = ? AND kind = 'workspace_inventory' ORDER BY created_at DESC LIMIT 1",
         )
         .bind(mission_id)
         .fetch_optional(&mut *transaction)
         .await?;
 
         let evidence_count: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM evidence WHERE mission_id = ?")
+            sqlx::query_scalar("SELECT COUNT(*) FROM evidence WHERE mission_id = ? AND kind = 'read_only_inventory'")
                 .bind(mission_id)
                 .fetch_one(&mut *transaction)
                 .await?;
@@ -646,7 +646,10 @@ mod tests {
         let approved = store.approve_mission(&mission.id).await?;
         assert_eq!(approved.status, "completed");
         assert!(store.approve_mission(&mission.id).await.is_err());
-        assert_eq!(store.list_evidence(&mission.id).await?.len(), 2);
+        let approval_evidence = store.list_evidence(&mission.id).await?;
+        assert_eq!(approval_evidence.len(), 2);
+        assert_eq!(approval_evidence[1].kind, "human_approval");
+        assert_eq!(approval_evidence[1].artifact_id.as_deref(), Some(result.artifact.id.as_str()));
 
         drop(store);
         let reopened = Store::connect(&database).await?;
