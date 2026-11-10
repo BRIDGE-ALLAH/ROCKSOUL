@@ -6,13 +6,33 @@ on:
       - main
       - "feat/**"
       - "docs/**"
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "package.json"
+      - "bun.lock"
+      - "apps/desktop/**"
+      - "crates/**"
   pull_request:
     branches:
       - main
       - "docs/**"
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "package.json"
+      - "bun.lock"
+      - "apps/desktop/**"
+      - "crates/**"
 
 permissions:
   contents: read
+
+concurrency:
+  group: rocksoul-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   core:
