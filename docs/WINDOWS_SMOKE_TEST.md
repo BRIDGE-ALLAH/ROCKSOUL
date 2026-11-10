@@ -4,6 +4,8 @@ This is the native desktop acceptance checklist for the first local-mission slic
 
 ## Automated Windows E2E
 
+**Latest verified result:** [GitHub Actions run #42894857711](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42894857711) passed on commit `02c258c` (11 November 2026). The native build, Rust core, UI checks, and Windows lifecycle E2E all passed. This result does not cover the manual shell dialog below.
+
 The GitHub Actions Windows job compiles and launches the actual Tauri desktop executable in the Rust **debug profile** through WebDriverIO and Microsoft Edge WebDriver. It still exercises the real Rust IPC handlers and local SQLite vault; this is not browser preview mode and no application commands or persistence are mocked. The unoptimized profile keeps the E2E job focused on behavior rather than release-profile thin-LTO link time.
 
 It creates a synthetic workspace and checks:
