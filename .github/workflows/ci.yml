@@ -99,7 +99,9 @@ jobs:
         # E2E validates real Tauri + Rust IPC + SQLite behavior. Debug profile
         # avoids the release profile's thin-LTO link cost without replacing
         # the native application with a browser preview or mocked commands.
-        run: cargo build -p rocksoul-desktop
+        # Direct Cargo builds must enable custom-protocol to embed ui/dist;
+        # otherwise the binary tries to load the stopped Vite dev server.
+        run: cargo build -p rocksoul-desktop --features custom-protocol
       - name: Prepare synthetic local workspace
         shell: pwsh
         run: |
