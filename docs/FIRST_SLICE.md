@@ -1,6 +1,6 @@
 # FIRST LOCAL MISSION SLICE
 
-**Current implementation branch:** `feat/first-local-mission-slice`
+**Merged into:** `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2) (2026-11-10)
 
 This slice connects a real local project to a durable mission, performs one bounded read-only operation, and stores a result with evidence.
 
@@ -58,8 +58,8 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 - No source-content reading or provider egress exists yet.
 - No tool-action approval system exists because the Scout is metadata-only and read-only. The only approval in this slice is the human decision to complete the mission after reviewing its inventory artifact.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
-- Platform validation is not complete. Windows is the first target; macOS/Linux need separate CI and runtime acceptance.
-- The GitHub CI workflow must pass before this slice is treated as build-verified.
+- Platform validation is not complete. The Windows CI compile check passed, but no interactive Windows desktop launch/folder-picker smoke test has been performed. macOS/Linux need separate CI and runtime acceptance.
+- GitHub Actions run [#42831777183](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42831777183) passed on the exact source tree merged to `main`: Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows `cargo check --workspace --all-targets`.
 
 ## Acceptance checklist
 
@@ -73,6 +73,6 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 - [x] Native directory picker wired through a scoped dialog capability.
 - [x] Human approval gate records a separate evidence receipt.
 - [x] CI workflow added.
-- [ ] GitHub CI green.
+- [x] GitHub CI green (run #42831777183 on the merged source tree).
 - [ ] Interactive Windows desktop smoke test completed.
 - [ ] Backup/restore and clean-install checks added.
