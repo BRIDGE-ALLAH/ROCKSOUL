@@ -63,11 +63,11 @@ There is no guaranteed ladder from today's AI to AGI or ASI. A tagline is not a 
 
 ## Tech direction
 
-Rocksoul is planned as a Rust-first desktop product: **Tauri 2 + Rust core + React/TypeScript UI + SQLite local memory**. We'll use a small, well-defined set of components—not a pile of fashionable frameworks. The detailed stack proposal and trade-offs live in [docs/TECH_STACK.md](docs/TECH_STACK.md).
+Rocksoul is being built Rust-first: **Rust 1.99 + Tauri 2.12 + React 19.3 + Vite 8.3 + SQLite/SQLx 0.9**. Rust owns persistence and the trust boundary; React owns the creative desktop surface. The exact pinned toolchain and trade-offs live in [docs/TECH_STACK.md](docs/TECH_STACK.md).
 
 ## Where we are
 
-This repository starts as a product, research, architecture, and audit foundation. It is **not yet a runnable Rocksoul app**. See [docs/ROADMAP.md](docs/ROADMAP.md) before implementation.
+The first local-mission implementation is now on the `feat/first-local-mission-slice` branch: persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact/evidence receipt, and the first desktop UI. It is **prototype code, not a release-ready installer**; GitHub CI and a real Windows desktop smoke test are still required. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Start here
 
@@ -77,6 +77,8 @@ This repository starts as a product, research, architecture, and audit foundatio
 - [Architecture](docs/ARCHITECTURE.md)
 - [Repository and ecosystem audit](docs/AUDIT.md)
 - [Wild idea lab](docs/IDEA_LAB.md)
+- [First local mission slice](docs/FIRST_SLICE.md)
+- [Security posture](SECURITY.md)
 - [Roadmap and quality gates](docs/ROADMAP.md)
 
 ---
