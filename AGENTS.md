@@ -45,3 +45,14 @@ A task is complete only when:
 - documentation reflects the actual behavior.
 
 **Chaos belongs in exploration. Discipline belongs in execution.**
+
+
+## Product authority and issue execution
+
+Before product or architectural work, read these canonical documents in order:
+1. `docs/PRODUCT_NARRATIVE.md` for product promise, voice, AGILITY, and capability claims.
+2. `docs/BLUEPRINT.md` for normative architecture, domain, security, UX, and phase gates.
+3. `docs/AI_TASK_PROTOCOL.md` for the one-issue execution and handoff protocol.
+4. `docs/ISSUE_MAP.md` to select an unblocked, non-overlapping task.
+
+The issue is the executable scope. Work on one issue at a time; do not absorb adjacent issues or invent additional capability. If an issue conflicts with this file or the blueprint, stop and report the conflict before editing.
