@@ -47,7 +47,7 @@ From the repository root, build and launch the native debug executable used by t
 ~~~powershell
 bun install
 bun run ui:build
-cargo build -p rocksoul-desktop
+cargo build -p rocksoul-desktop --features custom-protocol
 .\target\debug\rocksoul-desktop.exe
 ~~~
 
