@@ -11,8 +11,8 @@ use serde::Serialize;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
     SqlitePool,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
 };
 use uuid::Uuid;
 
@@ -200,11 +200,13 @@ impl Store {
         .await?
         .ok_or(StoreError::NotFound)?;
 
-        let root = PathBuf::from(&project.root_path).canonicalize().map_err(|error| {
-            StoreError::ProjectDirectory(format!(
-                "the project folder is no longer available ({error})"
-            ))
-        })?;
+        let root = PathBuf::from(&project.root_path)
+            .canonicalize()
+            .map_err(|error| {
+                StoreError::ProjectDirectory(format!(
+                    "the project folder is no longer available ({error})"
+                ))
+            })?;
 
         if !root.is_dir() {
             return Err(StoreError::ProjectDirectory(
@@ -213,11 +215,10 @@ impl Store {
         }
 
         let inventory_root = root.clone();
-        let (files, truncated, warnings) = tokio::task::spawn_blocking(move || {
-            collect_inventory(&inventory_root)
-        })
-        .await
-        .map_err(|error| StoreError::Task(error.to_string()))?;
+        let (files, truncated, warnings) =
+            tokio::task::spawn_blocking(move || collect_inventory(&inventory_root))
+                .await
+                .map_err(|error| StoreError::Task(error.to_string()))?;
         let mut extensions = BTreeMap::<String, usize>::new();
         for file in &files {
             *extensions.entry(file.extension.clone()).or_default() += 1;
@@ -241,7 +242,9 @@ impl Store {
                 "maxWarnings": MAX_WARNINGS
             }
         }))
-        .map_err(|error| StoreError::InvalidInput(format!("could not serialize inventory: {error}")))?;
+        .map_err(|error| {
+            StoreError::InvalidInput(format!("could not serialize inventory: {error}"))
+        })?;
 
         let digest = format!("{:x}", Sha256::digest(content.as_bytes()));
         let timestamp = now();
@@ -475,8 +478,7 @@ mod tests {
     use super::Store;
 
     #[tokio::test]
-    async fn project_mission_inventory_and_evidence_survive_reopen(
-    ) -> Result<(), Box<dyn Error>> {
+    async fn project_mission_inventory_and_evidence_survive_reopen() -> Result<(), Box<dyn Error>> {
         let temporary = tempdir()?;
         let workspace = temporary.path().join("workspace");
         fs::create_dir_all(workspace.join("src"))?;
@@ -509,7 +511,12 @@ mod tests {
         assert!(!result.artifact.content.contains(".env"));
         assert!(!result.artifact.content.contains("identity.pem"));
         assert!(!result.artifact.content.contains("target/output.bin"));
-        assert!(result.evidence.details_json.contains("\"modifiedWorkspace\":false"));
+        assert!(
+            result
+                .evidence
+                .details_json
+                .contains("\"modifiedWorkspace\":false")
+        );
 
         let missions = store.list_missions(&project.id).await?;
         assert_eq!(missions[0].status, "review");
@@ -529,23 +536,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rejects_nonexistent_project_folder_without_writing_record(
-    ) -> Result<(), Box<dyn Error>> {
+    async fn rejects_nonexistent_project_folder_without_writing_record()
+    -> Result<(), Box<dyn Error>> {
         let temporary = tempdir()?;
         let store = Store::connect(&temporary.path().join("rocksoul.sqlite3")).await?;
         let missing = temporary.path().join("missing");
 
-        assert!(store
-            .create_project("No folder", missing.to_str().unwrap_or_default())
-            .await
-            .is_err());
+        assert!(
+            store
+                .create_project("No folder", missing.to_str().unwrap_or_default())
+                .await
+                .is_err()
+        );
         assert!(store.list_projects().await?.is_empty());
         Ok(())
     }
 
     #[tokio::test]
-    async fn mission_cannot_be_used_outside_its_project(
-    ) -> Result<(), Box<dyn Error>> {
+    async fn mission_cannot_be_used_outside_its_project() -> Result<(), Box<dyn Error>> {
         let temporary = tempdir()?;
         let workspace = temporary.path().join("workspace");
         fs::create_dir_all(&workspace)?;
@@ -554,10 +562,12 @@ mod tests {
             .create_project("Rocksoul", workspace.to_str().unwrap_or_default())
             .await?;
 
-        assert!(store
-            .inspect_workspace(&project.id, "not-a-mission")
-            .await
-            .is_err());
+        assert!(
+            store
+                .inspect_workspace(&project.id, "not-a-mission")
+                .await
+                .is_err()
+        );
         Ok(())
     }
 
@@ -567,10 +577,12 @@ mod tests {
         let workspace = temporary.path().join("workspace");
         fs::create_dir_all(&workspace)?;
         let store = Store::connect(&temporary.path().join("rocksoul.sqlite3")).await?;
-        assert!(store
-            .create_project("  ", workspace.to_str().unwrap_or_default())
-            .await
-            .is_err());
+        assert!(
+            store
+                .create_project("  ", workspace.to_str().unwrap_or_default())
+                .await
+                .is_err()
+        );
         Ok(())
     }
 }
