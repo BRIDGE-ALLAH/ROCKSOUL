@@ -65,6 +65,10 @@ There is no guaranteed ladder from today's AI to AGI or ASI. A tagline is not a 
 
 Rocksoul is being built Rust-first: **Rust 1.99 + Tauri 2.12 + React 19.3 + Vite 8.3 + SQLite/SQLx 0.9**. Rust owns persistence and the trust boundary; React owns the creative desktop surface. The exact pinned toolchain and trade-offs live in [docs/TECH_STACK.md](docs/TECH_STACK.md).
 
+## License
+
+No open-source license has been selected yet. Until the project owner publishes one, default copyright restrictions apply; do not assume permission to reuse or redistribute this code.
+
 ## Where we are
 
 The first local-mission implementation is now on the `feat/first-local-mission-slice` branch: native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and a human approval gate. It is **prototype code, not a release-ready installer**; current CI and a real Windows desktop smoke test still need to pass on the latest commit. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
