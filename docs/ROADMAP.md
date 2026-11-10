@@ -1,182 +1,202 @@
-# ROCKSOUL — ROADMAP
+# ROCKSOUL — DELIVERY ROADMAP
 
 **Build the engine before the fireworks.**
 
-Roadmap ini berbasis capability gate, bukan tanggal marketing. Tiap fase harus punya demo yang bisa diulang dan acceptance criteria yang bisa diperiksa.
+This roadmap is a capability-gated delivery sequence, not a marketing calendar. The canonical detail and security rules live in [BLUEPRINT.md](BLUEPRINT.md); this file is the phase-level navigation.
 
-## Current repository state — 2026-11-10
+## Authority and task tracking
 
-The first local-mission slice is merged to `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Verified by [GitHub Actions run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466): Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows desktop compilation all passed.
+- [Product narrative](PRODUCT_NARRATIVE.md) defines the promise and experience.
+- [Normative blueprint](BLUEPRINT.md) defines architecture, contracts, data, security, and exit gates.
+- [AI task protocol](AI_TASK_PROTOCOL.md) defines how one small local agent executes one task.
+- [Issue map](ISSUE_MAP.md) indexes the **100 task issues** and major dependency gates.
+- [Program tracker #4](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/4) is the umbrella checklist.
 
-**Implemented now:** one Tauri desktop shell, one React UI, local SQLite project/mission persistence, bounded metadata-only workspace inventory, SHA-256 artifact, atomic evidence receipt, and explicit human approval.
+No phase checkbox is complete merely because its issues are created. Exit gates require merged implementation and named verification evidence.
 
-**Still open in Phase 0:** rename/archive UX, FTS5/search, durable event ledger, backup/restore, structured crash-safe lifecycle, keyboard/accessibility review, interactive Windows launch/folder-picker smoke test, and packaging/clean-install checks. The first slice is build-verified, not a finished installer or a complete Phase 0 exit.
+## Current repository state — 11 November 2026
 
-**Phase 1 is not complete:** there is no provider adapter, no source-content/context compiler, no general tool registry, no mission cancellation/checkpoints, and no provider egress. Do not present the metadata Scout as a general-purpose autonomous agent.
+The first local-mission slice is merged into `main` through [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Its main-branch CI [run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, five core tests, Clippy, UI typecheck/production build, and Windows compile checking.
 
-## Phase 0 — FOUNDATION
+**Implemented on main:** Tauri desktop shell; React/TypeScript interface; local SQLite project/mission persistence; native folder-picker wiring with Rust path validation; bounded metadata-only Workspace Scout; SHA-256 JSON artifact; atomic evidence receipt; explicit human approval.
 
-**Target:** repo, contracts, UI shell, durable local state.
+**Not yet verified as native runtime acceptance:** PR #3's Windows WebDriver E2E lifecycle. The latest observed PR run [#42847161238](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42847161238) failed in its Windows E2E step. [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5) owns stabilizing that existing test harness; [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6) separately owns manual OS-native folder-picker select/cancel acceptance.
 
-Deliver:
-- Rust workspace and Tauri desktop shell.
-- React/TypeScript UI shell with Rocksoul identity.
-- Project create/open/rename/archive.
-- SQLite migrations, WAL, FTS5, backup and restore.
-- Typed domain IDs and event log.
-- Structured logs and crash-safe startup/shutdown.
-- CI for Rust + UI and Windows packaging smoke.
+**Phase 0 is not complete.** Rename/archive, event history, search, backup/restore, startup/shutdown recovery, keyboard/accessibility acceptance, native Windows runtime acceptance, deletion/reset, data-at-rest decision, design-system/navigation, installer/signing/update/clean-install remain open.
 
-Exit criteria:
-- Fresh clone builds in CI.
-- App starts, creates a project, restarts, and restores data.
-- No fake health or completion state.
-- Database migration and backup/restore round-trip pass.
-- UI can be navigated by keyboard.
+**Phase 1 is not complete.** There is no bounded source-content compiler, approved provider adapter, general tool registry, resumable mission runner, or criterion-backed provider mission. The current metadata Scout is not a general-purpose autonomous agent.
 
-## Phase 1 — ONE RELIABLE MISSION
+## Phase 0 — FOUNDATION & DESKTOP RELIABILITY
 
-**Target:** complete useful work with read-only tools.
+**Target:** a dependable, accessible Windows desktop foundation with honest state and recoverable local data.
 
-Deliver:
-- Mission spec with objective, scope, constraints, acceptance criteria.
-- Context compiler with file/path/FTS search.
-- Provider adapter for one real model.
-- Tool registry with read-only file/repository tools.
-- Plan preview, cancellation, timeout, and persisted checkpoints.
-- Evidence timeline and artifact export.
+Scope includes:
+- project lifecycle: create, rename, archive/unarchive, safe unlink/delete;
+- local SQLite schema, migrations, event ledger, metadata FTS5 search;
+- consistent online backup, export, preflight, restore, and startup/shutdown recovery;
+- keyboard and screen-reader semantics, contrast, reduced motion;
+- canonical design tokens, shared accessible UI primitives, real-workspace navigation;
+- data-at-rest threat model, deletion/reset semantics, Windows native runtime/picker acceptance;
+- reproducible Windows installer, signing, update, rollback, and clean-machine gates.
 
-Exit criteria:
-- A real repository question can be researched and answered with file/source references.
-- User can inspect what context was sent to the provider.
-- Mission state survives app restart.
-- Provider failure does not lose the mission or corrupt project state.
-- Completion is blocked if required evidence is missing.
+Exit gate:
+- [ ] Fresh clone builds under CI on the stated toolchain.
+- [ ] Native Windows app launches/exits and reconnects to its local vault.
+- [ ] Project/mission lifecycle and folder-picker choose/cancel/invalid-path flows are accepted on a real Windows desktop.
+- [ ] App restart and unclean-exit recovery preserve or reconcile durable state.
+- [ ] Backup/restore round-trip, integrity, and corruption/failure recovery pass.
+- [ ] Keyboard-only, screen-reader, contrast, and reduced-motion checks pass.
+- [ ] Installer, signing, update, rollback, uninstall, and clean-machine checks pass before public release.
 
-## Phase 2 — SAFE ACTIONS
+## Phase 1 — ONE RELIABLE READ-ONLY MISSION
 
-**Target:** limited write actions in isolated workspace.
+**Target:** one real repository question answered with inspectable context and criterion-specific evidence.
 
-Deliver:
-- Capability manifests and policy engine.
-- Exact action preview and approval.
-- One action per approval grant; no blanket shell permission.
-- Isolated Git worktree per coding mission.
-- Patch preview, apply journal, rollback, and test run.
-- Tool process supervision and structured logs.
+Scope includes:
+- versioned mission contract/state/checkpoints/cancellation;
+- explicit source catalog and bounded read-only text extraction;
+- deterministic context compiler, source search, and context inspector;
+- data classification, fail-closed egress, credential store, and one reviewed provider;
+- versioned read-only tool manifests and Workspace Scout registration;
+- structured plan preview and criterion-specific evidence gates;
+- prompt-injection/untrusted-source boundary;
+- hypothesis/route/experiment records and a branchable Chaos Canvas that promotes to draft only.
 
-Exit criteria:
-- Traversal, symlink, hard-link, TOCTOU, command-injection, and secret-leak tests pass.
-- Cancellation and timeout work while a command is running.
-- Crash recovery can identify incomplete operations and offer safe rollback.
-- No agent writes outside granted roots.
-- Human approval is bound to the exact patch/action digest.
+Exit gate:
+- [ ] A real repository question is answered by a real provider only after exact context/egress policy permits it.
+- [ ] The user can inspect included/excluded/truncated sources and the exact context digest.
+- [ ] Only registered read-only tools execute in this phase.
+- [ ] Untrusted source content cannot alter grants, policy, egress, approval, or mission scope.
+- [ ] Every mandatory criterion maps to fresh, inspectable evidence.
+- [ ] Mission state and evidence survive app restart and provider failure.
+
+## Phase 2 — SAFE ACTIONS & EXECUTION AUTHORITY
+
+**Target:** limited writes and command operations in an enforceable OS boundary.
+
+Scope includes:
+- typed capability grants, default-deny policy, revocation, and exact-digest approvals;
+- canonical filesystem grants and adversarial path/TOCTOU tests;
+- supervised child processes and a small typed command catalog—not arbitrary shell;
+- reviewed Windows process isolation profile, enforcement, and escape regression suite;
+- isolated Git worktree per coding mission;
+- immutable patch proposals, exact approval, durable apply journal, rollback, and crash recovery;
+- bounded allowlisted test runner with structured evidence.
+
+Exit gate:
+- [ ] No operation runs without a current policy Allow and the required grant/approval.
+- [ ] Windows filesystem/network/process/resource restrictions are enforced at OS/runtime boundary.
+- [ ] Failure to initialize mandatory isolation denies execution; no unsandboxed fallback exists.
+- [ ] Traversal, link, TOCTOU, command injection, environment, network, descendant, and resource tests pass.
+- [ ] Timeout/cancellation/crash recovery reconcile side effects and preserve an audit trail.
+- [ ] Patch application is bound to an exact digest and is recoverable/rollback-capable.
 
 ## Phase 3 — PROOF-CARRYING CREATION
 
-**Target:** artifacts become trustworthy deliverables.
+**Target:** deliverables that another machine can independently inspect.
 
-Deliver:
-- Artifact versions and diffs.
-- Source/provenance manifest.
-- Evidence mapping to acceptance criteria.
-- Independent verifier role.
-- Export pack with artifact, evidence, and environment manifest.
-- Clear statuses: draft, built, tested, reviewed, approved, published.
+Scope includes:
+- immutable content-addressed artifact versions and diff review;
+- versioned provenance manifests;
+- evidence mapped to each acceptance criterion;
+- portable export pack and offline integrity verifier.
 
-Exit criteria:
-- A second machine can inspect an exported evidence pack.
-- Every completed mission has verifiable acceptance evidence.
-- Failed checks and unresolved uncertainty remain visible.
-- "Verified" cannot be set by a model response alone.
+Exit gate:
+- [ ] Every completed mission has artifact, contract, sources, tool/provider versions, approvals, test results, and limitations in its provenance.
+- [ ] A second machine can verify exported artifact/evidence integrity offline.
+- [ ] A model cannot self-certify a criterion.
+- [ ] Failure and unresolved uncertainty remain visible.
 
-## Phase 4 — ADAPTIVE MEMORY & CREW
+## Phase 4 — ADAPTIVE MEMORY, SKILLS & CREW
 
-**Target:** continuity and specialist collaboration.
+**Target:** durable continuity and small, bounded specialist collaboration.
 
-Deliver:
-- Working, episodic, semantic, procedural, and preference memory.
-- Memory correction/deletion controls.
-- Skill folders with manifests and eval fixtures.
-- Two or three specialist roles, not a default giant swarm.
-- Context budgeter and memory retrieval evaluation.
-- Agent comparison/critique view.
+Scope includes:
+- typed working/episodic/semantic/procedural/preference memory;
+- user review, correction, scope, deletion, and evaluated retrieval;
+- versioned portable skills and inspect-before-install;
+- worker/verifier role contracts, isolated assignments, small crew orchestration, disagreement/critique.
 
-Exit criteria:
-- Memory retrieval quality measured against a fixture set.
-- User can inspect source and scope for each memory.
-- Agent disagreement is preserved until resolved.
-- Skills cannot grant their own permissions.
-- No memory fact is promoted silently from an unverified model guess.
+Exit gate:
+- [ ] Each memory item has provenance, trust, scope, age, and correction/deletion controls.
+- [ ] Retrieval is evaluated on frozen fixtures and respects scope/deletion.
+- [ ] Skills cannot grant themselves authority or silently change policy.
+- [ ] Worker and verifier operate with separate scope, budget, evidence, and writable workspace.
+- [ ] Disagreement is preserved rather than forced into false consensus.
 
 ## Phase 5 — REALITY LOOM
 
-**Target:** controlled hybrid computer use.
+**Target:** controlled browser/desktop work integrated with files and approved commands.
 
-Deliver:
-- Browser adapter with semantic locator support.
-- Desktop accessibility tree adapter for first target OS.
-- Screenshot/vision fallback.
-- GUI + CLI + file operations in one trace.
-- Session isolation and explicit app/domain allowlists.
-- WeaveBench-inspired internal tasks.
+Scope includes:
+- semantic-first isolated browser adapter and domain allowlists;
+- Windows desktop accessibility-tree read adapter;
+- consented screenshot/vision fallback;
+- fresh-state/precondition/action/post-state verification;
+- reproducible hybrid GUI/browser/CLI/file benchmark.
 
-Exit criteria:
-- Each action re-reads state and checks expected result.
-- Failed or ambiguous actions stop safely.
-- Agent cannot access non-allowed applications or domains.
-- Evaluation scores final artifacts and traces, not just model narration.
+Exit gate:
+- [ ] Browser/desktop sessions are explicitly scoped, isolated, and auditable.
+- [ ] Each action uses a fresh state snapshot and verifies its postcondition.
+- [ ] Missing/ambiguous/stale targets stop safely with human intervention.
+- [ ] Non-allowed apps/domains cannot be accessed.
+- [ ] Benchmark scores both final artifacts and traces; safety violations are hard failures.
 
 ## Phase 6 — MODEL DJ & LOCAL INTELLIGENCE
 
-**Target:** policy-first model routing.
+**Target:** policy-first choice between verified cloud and local model profiles.
 
-Deliver:
-- Multiple cloud provider adapters.
-- Optional local model sidecar.
-- Capability registry and model profiles.
-- Routing by data class, measured quality, latency, price, and availability.
-- Provider comparison on frozen task suites.
-- Cost/latency accounting and fail-closed egress.
+Scope includes:
+- versioned provider/model capability profiles;
+- second provider adapter;
+- privacy-first routing;
+- local usage/cost/latency accounting;
+- optional supervised local inference sidecar;
+- explicit offline/local-only mode;
+- reproducible provider comparison.
 
-Exit criteria:
-- User sees why a model/provider was selected.
-- Sensitive data cannot be routed to a disallowed endpoint.
-- Local mode remains usable without network.
-- Model changes do not silently change harness behavior.
+Exit gate:
+- [ ] User can inspect why a provider/model was selected.
+- [ ] Sensitive or unknown data cannot route to a disallowed endpoint.
+- [ ] Local-only mode is functional and states unavailable features honestly.
+- [ ] Capability claims are test-verified and versioned.
+- [ ] Model changes do not silently change mission harness or evidence semantics.
 
-## Phase 7 — CREATIVE COLLIDER / RESEARCH LAB
+## Phase 7 — CREATIVE COLLIDER & RESEARCH LAB
 
-**Target:** exploratory multimodal workflows and counterfactual experiments.
+**Target:** explicit-consent multimodal work and evaluated long-horizon experiments.
 
-Potential:
-- Image/audio/video workflows.
-- Simulation and "what-if" environments.
-- More expressive idea graphs.
-- Agent-generated skill proposals with human approval.
-- Research reports on adaptability, collaboration, and evaluation.
+Scope includes:
+- creative asset catalog and reference-first import;
+- consented image/audio/video workflows;
+- bounded counterfactual/simulation sandbox;
+- human-reviewed skill improvement proposals;
+- opt-in local human-agency/intervention metrics;
+- AGILITY long-horizon benchmark.
 
-This phase is not required for the first product release. The ASI phrase is a horizon, not a delivery plan.
+Exit gate:
+- [ ] Every media input/output has source selection, data limits, classification, consent, provenance, and retention semantics.
+- [ ] Source assets remain unchanged unless explicit import/copy is chosen.
+- [ ] Simulation results show assumptions and uncertainty, not prediction claims.
+- [ ] Skill changes require human review and preserve rollback.
+- [ ] Metrics are opt-in, local, transparent, and deletable.
+- [ ] Benchmarks are reproducible and never marketed as AGI/ASI scores.
+
+## OPS — CROSS-CUTTING DELIVERY
+
+- [ ] OPS-01 defines per-OS/per-capability supported, experimental, or unavailable status; native runtime claims are backed by native tests.
+- [ ] OPS-02 generates SBOMs and reviewed license/vulnerability reports with pinned scanner/database versions and time-bounded exceptions.
 
 ## Release gates
 
-Every public release must pass:
-- Rust format, lint, unit, integration, and property tests.
-- UI type check, lint, unit, and accessibility smoke.
-- Windows clean-install, launch, update, rollback, and uninstall checks.
-- SQLite migration, corruption recovery, backup, and restore checks.
-- Security suite for filesystem, process, IPC, credentials, and network egress.
-- Eval suite with exact model, harness, tool, skill, and environment versions.
-- Dependency license and vulnerability checks.
-- Signed artifacts and update metadata.
-- No fake "done", "saved", "healthy", "synced", or "verified" states.
+Every public release must pass the relevant blueprint gates: Rust format/lint/unit/integration/property tests; UI typecheck/component/accessibility tests; native platform runtime tests; migration/backup/restore/recovery; filesystem/process/IPC/credential/egress security; exact-version evaluation; dependency SBOM/license/vulnerability review; signed artifact and update verification; clean-install/rollback/uninstall; and honest known-limitations disclosure.
 
 ## Explicit non-goals before v1
 
+- Unrestricted shell or desktop control.
+- Agent self-granting or self-modifying policy.
 - Autonomous public cloud publishing.
-- Unrestricted shell/desktop control.
-- Self-modifying permissions or policy.
-- Marketplace and arbitrary third-party native plugins.
+- Always-on camera, microphone, or screen capture.
+- Marketplace for arbitrary native plugins.
 - Multi-tenant team server.
-- Always-on screen/microphone recording.
 - Claims of AGI, ASI, consciousness, or guaranteed human-level capability.
