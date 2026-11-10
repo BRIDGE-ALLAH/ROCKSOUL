@@ -11,7 +11,7 @@ use serde::Serialize;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use sqlx::{
-    SqlitePool,
+    Sqlite, SqlitePool, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
 };
 use uuid::Uuid;
@@ -94,6 +94,9 @@ impl Store {
             updated_at: timestamp,
         };
 
+        // The insert is the first statement in the transaction, so SQLite
+        // serializes competing writers before the duplicate-name check.
+        let mut transaction = self.pool.begin().await?;
         sqlx::query(
             "INSERT INTO projects (id, name, root_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
         )
@@ -102,9 +105,56 @@ impl Store {
         .bind(&project.root_path)
         .bind(&project.created_at)
         .bind(&project.updated_at)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await?;
 
+        if project_name_conflicts(&mut transaction, &project.name, Some(&project.id)).await? {
+            transaction.rollback().await?;
+            return Err(StoreError::ProjectNameConflict);
+        }
+
+        transaction.commit().await?;
+        Ok(project)
+    }
+
+    /// Rename a project without changing its stable ID, canonical workspace
+    /// path, creation time, or any mission/artifact/evidence relationships.
+    pub async fn rename_project(&self, project_id: &str, name: &str) -> Result<Project, StoreError> {
+        let name = validate_text("Project name", name, 80)?;
+        let timestamp = now();
+        let mut transaction = self.pool.begin().await?;
+
+        // Updating first acquires SQLite's writer reservation before checking
+        // duplicates, preventing concurrent create/rename operations from
+        // passing the same availability check.
+        let changed = sqlx::query(
+            "UPDATE projects SET name = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(&name)
+        .bind(&timestamp)
+        .bind(project_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+
+        if changed != 1 {
+            transaction.rollback().await?;
+            return Err(StoreError::NotFound);
+        }
+
+        if project_name_conflicts(&mut transaction, &name, Some(project_id)).await? {
+            transaction.rollback().await?;
+            return Err(StoreError::ProjectNameConflict);
+        }
+
+        let project = sqlx::query_as::<_, Project>(
+            "SELECT id, name, root_path, created_at, updated_at FROM projects WHERE id = ?",
+        )
+        .bind(project_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+
+        transaction.commit().await?;
         Ok(project)
     }
 
@@ -440,6 +490,30 @@ impl Store {
         .fetch_one(&self.pool)
         .await?)
     }
+}
+
+/// Project names are trimmed and compared using Unicode lowercase. This
+/// intentionally does not apply Unicode NFC/NFD normalization, so visually
+/// equivalent but differently normalized code-point sequences remain distinct.
+fn normalize_project_name(name: &str) -> String {
+    name.trim().to_lowercase()
+}
+
+async fn project_name_conflicts(
+    transaction: &mut Transaction<'_, Sqlite>,
+    name: &str,
+    exclude_project_id: Option<&str>,
+) -> Result<bool, StoreError> {
+    let existing: Vec<(String, String)> =
+        sqlx::query_as("SELECT id, name FROM projects")
+            .fetch_all(&mut **transaction)
+            .await?;
+    let normalized = normalize_project_name(name);
+
+    Ok(existing.into_iter().any(|(id, existing_name)| {
+        exclude_project_id != Some(id.as_str())
+            && normalize_project_name(&existing_name) == normalized
+    }))
 }
 
 fn validate_text(field: &str, value: &str, max_chars: usize) -> Result<String, StoreError> {
