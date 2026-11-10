@@ -8,6 +8,9 @@ pub enum StoreError {
     #[error("The requested project or mission was not found.")]
     NotFound,
 
+    #[error("A project with this name already exists. Choose a different name.")]
+    ProjectNameConflict,
+
     #[error("The selected project directory is not available: {0}")]
     ProjectDirectory(String),
 
