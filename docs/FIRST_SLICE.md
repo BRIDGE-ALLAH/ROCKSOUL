@@ -9,7 +9,7 @@ This slice connects a real local project to a durable mission, performs one boun
 1. **Native folder selection** — the Tauri dialog lets the user choose a directory; Rust canonicalizes and validates it before creating the project.
 2. **Local project registry** — project name and canonical workspace path are stored in the app-local SQLite database.
 3. **Mission drafting** — mission title/objective are validated and stored with a `draft` status.
-4. **Workspace Scout** — traverses a bounded directory tree, respects Git ignore rules, does not follow symlinks, and only reads file metadata (path, size, extension).
+4. **Workspace Scout** — traverses a bounded directory tree, respects Git ignore rules, does not follow symlinks, and records file metadata (path, size, extension). To honor ignore behavior it reads applicable ignore-rule files; it does not open source, document, or binary contents.
 5. **Sensitive-name exclusions** — common secrets/config files, build output, package directories, and local Rocksoul state are omitted.
 6. **Artifact creation** — the workspace inventory is stored as structured JSON and hashed with SHA-256.
 7. **Evidence receipt** — operation summary, scope, file count, limits, and no-content/no-write assertions are stored in the same database transaction as the artifact.
@@ -18,7 +18,7 @@ This slice connects a real local project to a durable mission, performs one boun
 
 ## What the Scout does not do
 
-- It does not read source code or document contents.
+- It does not read source code, document, or binary contents. Only the ignore-rule configuration needed for traversal is read.
 - It does not run commands, scripts, tests, or Git hooks.
 - It does not call a model or send any data to a provider.
 - It does not modify, create, or delete files in the selected project.
