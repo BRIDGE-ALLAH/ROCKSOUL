@@ -5,7 +5,7 @@ Rocksoul is a local-first desktop application. Security boundaries belong in the
 ## First-slice security posture
 
 The Workspace Scout is deliberately metadata-only:
-- It never opens source, document, or binary contents. The ignore engine reads applicable `.gitignore`, `.git/info/exclude`, and other Git ignore rules to decide which paths to skip.
+- It never opens source, document, or binary contents. The ignore engine reads applicable `.gitignore`, `.ignore`, `.git/info/exclude`, and parent/global ignore rules to decide which paths to skip.
 - It does not execute commands or child processes.
 - It does not make network/provider requests.
 - It does not modify the selected workspace.
