@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::Read,
     path::{Path, PathBuf},
     time::Duration,
@@ -135,7 +135,10 @@ impl Store {
         }
 
         let database_bytes = fs::metadata(&database_path)?.len();
-        File::open(&database_path)?.sync_all()?;
+        OpenOptions::new()
+            .write(true)
+            .open(&database_path)?
+            .sync_all()?;
 
         let mut snapshot = SqliteConnection::connect_with(
             &SqliteConnectOptions::new()
@@ -193,7 +196,10 @@ impl Store {
         let manifest_bytes = serde_json::to_vec_pretty(&manifest)
             .map_err(|error| StoreError::Backup(format!("Could not encode manifest: {error}")))?;
         fs::write(&manifest_path, manifest_bytes)?;
-        File::open(&manifest_path)?.sync_all()?;
+        OpenOptions::new()
+            .write(true)
+            .open(&manifest_path)?
+            .sync_all()?;
 
         // The database and manifest are finalized together by a same-volume
         // directory rename. Consumers must ignore hidden *.partial directories.
@@ -278,7 +284,7 @@ mod tests {
         assert!(backup.database_path.is_file());
         assert!(backup.manifest_path.is_file());
         assert_eq!(backup.manifest.format_version, 1);
-        assert!(backup.manifest.schema_version >= 1);
+        assert_eq!(backup.manifest.schema_version, 2);
         assert_eq!(backup.manifest.integrity_result, "ok");
         assert_eq!(backup.manifest.app_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(backup.manifest.database_file, "database.sqlite3");
