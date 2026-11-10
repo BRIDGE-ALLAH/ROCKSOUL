@@ -200,6 +200,12 @@ impl Store {
         .await?
         .ok_or(StoreError::NotFound)?;
 
+        if mission.status != "draft" && mission.status != "in_progress" {
+            return Err(StoreError::InvalidInput(
+                "Only a draft or in-progress mission can run the Workspace Scout.".to_string(),
+            ));
+        }
+
         let root = PathBuf::from(&project.root_path)
             .canonicalize()
             .map_err(|error| {
@@ -325,6 +331,105 @@ impl Store {
             truncated,
         })
     }
+    /// Records a human review decision. A mission can only be approved after
+    /// a successful inventory created both an artifact and an evidence receipt.
+    pub async fn approve_mission(&self, mission_id: &str) -> Result<Mission, StoreError> {
+        let mut transaction = self.pool.begin().await?;
+
+        let mission = sqlx::query_as::<_, Mission>(
+            "SELECT id, project_id, title, objective, status, created_at, updated_at
+             FROM missions WHERE id = ?",
+        )
+        .bind(mission_id)
+        .fetch_optional(&mut *transaction)
+        .await?
+        .ok_or(StoreError::NotFound)?;
+
+        if mission.status != "review" {
+            return Err(StoreError::InvalidInput(
+                "Only a mission in review can be approved.".to_string(),
+            ));
+        }
+
+        let artifact_id: Option<String> = sqlx::query_scalar(
+            "SELECT id FROM artifacts WHERE mission_id = ? ORDER BY created_at DESC LIMIT 1",
+        )
+        .bind(mission_id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+        let evidence_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM evidence WHERE mission_id = ?")
+                .bind(mission_id)
+                .fetch_one(&mut *transaction)
+                .await?;
+
+        if artifact_id.is_none() || evidence_count < 1 {
+            return Err(StoreError::InvalidInput(
+                "Approval blocked: the mission has no saved artifact and evidence receipt.".to_string(),
+            ));
+        }
+
+        let timestamp = now();
+        let approval = Evidence {
+            id: Uuid::new_v4().to_string(),
+            mission_id: mission_id.to_string(),
+            artifact_id: artifact_id.clone(),
+            kind: "human_approval".to_string(),
+            summary: "User reviewed the local workspace inventory and approved this mission.".to_string(),
+            source_path: None,
+            details_json: json!({
+                "decision": "approved",
+                "artifactId": artifact_id,
+                "evidenceCountAtApproval": evidence_count
+            })
+            .to_string(),
+            created_at: timestamp.clone(),
+        };
+
+        sqlx::query(
+            "INSERT INTO evidence
+             (id, mission_id, artifact_id, kind, summary, source_path, details_json, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&approval.id)
+        .bind(&approval.mission_id)
+        .bind(&approval.artifact_id)
+        .bind(&approval.kind)
+        .bind(&approval.summary)
+        .bind(&approval.source_path)
+        .bind(&approval.details_json)
+        .bind(&approval.created_at)
+        .execute(&mut *transaction)
+        .await?;
+
+        let changed = sqlx::query(
+            "UPDATE missions SET status = 'completed', updated_at = ?
+             WHERE id = ? AND status = 'review'",
+        )
+        .bind(&timestamp)
+        .bind(mission_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+
+        if changed != 1 {
+            return Err(StoreError::InvalidInput(
+                "Mission state changed before approval could be recorded.".to_string(),
+            ));
+        }
+
+        transaction.commit().await?;
+
+        Ok(sqlx::query_as::<_, Mission>(
+            "SELECT id, project_id, title, objective, status, created_at, updated_at
+             FROM missions WHERE id = ?",
+        )
+        .bind(mission_id)
+        .fetch_one(&self.pool)
+        .await?)
+    }
+
 }
 
 fn validate_text(field: &str, value: &str, max_chars: usize) -> Result<String, StoreError> {
@@ -522,13 +627,21 @@ mod tests {
         assert_eq!(missions[0].status, "review");
         assert_eq!(store.list_artifacts(&mission.id).await?.len(), 1);
         assert_eq!(store.list_evidence(&mission.id).await?.len(), 1);
+        assert!(store.inspect_workspace(&project.id, &mission.id).await.is_err());
+
+        let approved = store.approve_mission(&mission.id).await?;
+        assert_eq!(approved.status, "completed");
+        assert!(store.approve_mission(&mission.id).await.is_err());
+        assert_eq!(store.list_evidence(&mission.id).await?.len(), 2);
 
         drop(store);
         let reopened = Store::connect(&database).await?;
         assert_eq!(reopened.list_projects().await?.len(), 1);
-        assert_eq!(reopened.list_missions(&project.id).await?.len(), 1);
+        let reopened_missions = reopened.list_missions(&project.id).await?;
+        assert_eq!(reopened_missions.len(), 1);
+        assert_eq!(reopened_missions[0].status, "completed");
         assert_eq!(reopened.list_artifacts(&mission.id).await?.len(), 1);
-        assert_eq!(reopened.list_evidence(&mission.id).await?.len(), 1);
+        assert_eq!(reopened.list_evidence(&mission.id).await?.len(), 2);
 
         assert!(!workspace.join(".rocksoul").exists());
         assert_eq!(fs::read_to_string(workspace.join("README.md"))?, "# demo\n");
