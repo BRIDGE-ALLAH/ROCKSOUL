@@ -237,7 +237,7 @@ impl Store {
             "mission": mission.title,
             "objective": mission.objective,
             "root": root.to_string_lossy(),
-            "mode": "read-only metadata inventory; file contents were not read",
+            "mode": "read-only metadata inventory; source/document/binary contents were not opened; Git ignore rules were read",
             "fileCount": files.len(),
             "truncated": truncated,
             "extensions": extensions,
@@ -273,7 +273,7 @@ impl Store {
             artifact_id: Some(artifact.id.clone()),
             kind: "read_only_inventory".to_string(),
             summary: format!(
-                "Inventoried {} file entries. No file contents were opened and no workspace files were modified.",
+                "Inventoried {} file entries. Source/document/binary contents were not opened; Git ignore rules were consulted and no workspace files were modified.",
                 files.len()
             ),
             source_path: Some(root.to_string_lossy().into_owned()),
@@ -283,7 +283,8 @@ impl Store {
                 "maxFiles": MAX_INVENTORY_FILES,
                 "maxEntries": MAX_INVENTORY_ENTRIES,
                 "maxDepth": MAX_WALK_DEPTH,
-                "readFileContents": false,
+                "readProjectFileContents": false,
+                "readGitIgnoreRules": true,
                 "modifiedWorkspace": false
             })
             .to_string(),
