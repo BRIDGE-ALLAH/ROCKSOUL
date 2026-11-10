@@ -279,6 +279,8 @@ Adopt an explicit classification model (initial proposal: public, local, sensiti
 - never store credentials in ordinary SQLite rows, project memory, artifacts, or logs;
 - never claim encryption without verified platform-backed key lifecycle and backup/export behavior.
 
+The current prototype SQLite database is not encrypted by Rocksoul. The proposed staged key-management and database-encryption direction, platform comparison, legacy migration policy, and release gates are recorded in [ADR-0001 — Local data-at-rest protection](decisions/ADR-0001-data-at-rest.md). Its product-owner/security review and implementation proof gates remain open; sensitive persistence stays blocked until they pass.
+
 ## 8. Sources and context compiler
 
 ### 8.1 Explicit source scope
