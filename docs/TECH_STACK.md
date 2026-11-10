@@ -8,11 +8,11 @@ Don't pick a framework because it is loud on social media. Pick it because the p
 
 | Layer | Pick | Why |
 |---|---|---|
-| Desktop shell | **Tauri 2.x** | Native Rust host + system WebView; small footprint, good OS integration, explicit capability permissions. |
-| Native core | **Rust, Edition 2024** | Strong types, memory safety, native performance, mature async and systems ecosystem. |
-| UI | **React 19.x + TypeScript** | Fast iteration for a dense creative desktop UI; large component, editor, and accessibility ecosystem. |
-| Build | **Vite 8.x / Rolldown** | Fast frontend workflow; Vite 8 moved to a unified Rust-based Rolldown bundler. |
-| JS toolchain | **Bun 1.x** | Workspaces, package manager, test runner, scripts. Use it for UI/tooling—not as a replacement for the native security boundary. |
+| Desktop shell | **Tauri 2.12.5** | Native Rust host + system WebView; small footprint, good OS integration, explicit capability permissions. |
+| Native core | **Rust 1.99.0, Edition 2024** | Strong types, memory safety, native performance, mature async and systems ecosystem. |
+| UI | **React 19.3.0 + TypeScript** | Fast iteration for a dense creative desktop UI; large component, editor, and accessibility ecosystem. |
+| Build | **Vite 8.3.7 + Rolldown** | Fast frontend workflow; Vite 8 moved to a unified Rust-based Rolldown bundler. |
+| JS toolchain | **Bun 1.4.4** | Workspaces, package manager, test runner, scripts. Use it for UI/tooling—not as a replacement for the native security boundary. |
 | Async runtime | **Tokio** | Background jobs, streaming, provider calls, cancellation, and process supervision. |
 | Local database | **SQLite + WAL + FTS5** | Durable local store, full-text search, migrations, portable backups. |
 | Rust DB layer | **SQLx 0.9.x** | Async typed SQL layer with SQLite support. |
@@ -23,12 +23,16 @@ Don't pick a framework because it is loud on social media. Pick it because the p
 | Code understanding | **Tree-sitter + ripgrep** | Deterministic structural and lexical repo inspection before semantic/vector retrieval. |
 | Plugin sandbox (later) | **Wasmtime / WASI Components** | Potential portable sandbox for third-party extensions; introduce only with a tested capability model. |
 
-Version check snapshot on 10 Nov 2026: React's official docs list 19.3; Tauri publishes 2.12; Vite's latest blog announces 8.1; SQLx docs list 0.9.0. Pin exact compatible patch versions in lockfiles when implementation starts; do not copy floating versions into production builds.
+Implementation pin snapshot on 10 Nov 2026: Rust 1.99.0; Tauri 2.12.5 with tauri-build 2.7.4, CLI 2.12.4 and JS API 2.12.4; React 19.3.0; Vite 8.3.7 with @vitejs/plugin-react 6.3.0; Bun 1.4.4; SQLx 0.9.0. These are starting pins, not a substitute for a committed lockfile, CI build, vulnerability audit, or compatibility test. Refresh and pin exact transitive dependency versions before shipping.
 
 References:
 - [Tauri architecture](https://v2.tauri.app/concept/architecture/)
-- [Tauri 2.12 release](https://v2.tauri.app/release/tauri/v2.12.0/)
+- [Tauri 2.12.5 release](https://github.com/tauri-apps/tauri/releases/tag/tauri-v2.12.5)
+- [Tauri build 2.7.4](https://docs.rs/tauri-build/2.7.4/tauri_build/)
 - [React versions](https://react.dev/versions)
+- [Vite releases](https://github.com/vitejs/vite/releases)
+- [Bun 1.4.4](https://github.com/oven-sh/bun/releases/tag/bun-v1.4.4)
+- [SQLx 0.9.0](https://docs.rs/sqlx/0.9.0/sqlx/)
 - [Vite 8 announcement](https://vite.dev/blog/announcing-vite8)
 - [Vite releases](https://vite.dev/releases)
 - [Bun docs](https://bun.sh/docs)
