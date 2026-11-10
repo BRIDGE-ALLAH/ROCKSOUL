@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::{
     collections::BTreeMap,
     fs,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 const MAX_ENTRIES: usize = 1_500;
@@ -19,6 +19,7 @@ const IGNORED_DIRS: &[&str] = &[
 #[serde(rename_all = "camelCase")]
 pub struct InspectionReport {
     pub root_path: String,
+    pub entries_seen: usize,
     pub files_scanned: usize,
     pub directories_scanned: usize,
     pub skipped_sensitive: usize,
@@ -45,6 +46,7 @@ pub fn inspect_directory(path: &Path) -> Result<InspectionReport, String> {
 
     let mut report = InspectionReport {
         root_path: root.display().to_string(),
+        entries_seen: 0,
         files_scanned: 0,
         directories_scanned: 0,
         skipped_sensitive: 0,
@@ -75,7 +77,7 @@ fn walk(root: &Path, current: &Path, depth: usize, report: &mut InspectionReport
     report.directories_scanned += 1;
 
     for entry in entries {
-        if report.files_scanned + report.directories_scanned >= MAX_ENTRIES {
+        if report.entries_seen >= MAX_ENTRIES {
             report.truncated = true;
             break;
         }
@@ -83,10 +85,12 @@ fn walk(root: &Path, current: &Path, depth: usize, report: &mut InspectionReport
         let entry = match entry {
             Ok(entry) => entry,
             Err(_) => {
+                report.entries_seen += 1;
                 report.inaccessible += 1;
                 continue;
             }
         };
+        report.entries_seen += 1;
 
         let name = entry.file_name();
         let name = name.to_string_lossy();
@@ -99,7 +103,8 @@ fn walk(root: &Path, current: &Path, depth: usize, report: &mut InspectionReport
             }
         };
 
-        // Never follow symlinks, even when they point back inside the workspace.
+        // Never follow links. Canonical containment also protects against a directory
+        // being replaced between directory-entry inspection and recursion.
         if file_type.is_symlink() {
             report.skipped_symlinks += 1;
             continue;
@@ -110,7 +115,18 @@ fn walk(root: &Path, current: &Path, depth: usize, report: &mut InspectionReport
                 continue;
             }
             if depth < MAX_DEPTH {
-                walk(root, &path, depth + 1, report);
+                let canonical = match fs::canonicalize(&path) {
+                    Ok(canonical) => canonical,
+                    Err(_) => {
+                        report.inaccessible += 1;
+                        continue;
+                    }
+                };
+                if canonical != path || !canonical.starts_with(root) {
+                    report.skipped_symlinks += 1;
+                    continue;
+                }
+                walk(root, &canonical, depth + 1, report);
             }
             continue;
         }
@@ -180,6 +196,7 @@ mod tests {
         assert_eq!(report.files_scanned, 1);
         assert_eq!(report.skipped_sensitive, 2);
         assert_eq!(report.sample_files, vec!["src/main.rs"]);
+        assert!(report.entries_seen <= MAX_ENTRIES);
     }
 
     #[cfg(unix)]
