@@ -67,7 +67,7 @@ Rocksoul is being built Rust-first: **Rust 1.99 + Tauri 2.12 + React 19.3 + Vite
 
 ## Where we are
 
-The first local-mission implementation is now on the `feat/first-local-mission-slice` branch: persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact/evidence receipt, and the first desktop UI. It is **prototype code, not a release-ready installer**; GitHub CI and a real Windows desktop smoke test are still required. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+The first local-mission implementation is now on the `feat/first-local-mission-slice` branch: native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and a human approval gate. It is **prototype code, not a release-ready installer**; current CI and a real Windows desktop smoke test still need to pass on the latest commit. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Start here
 
