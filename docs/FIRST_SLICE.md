@@ -54,7 +54,8 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 
 ## Known limits and next gates
 
-- The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending.
+- The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending and is tracked separately by [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6). See [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md) for the manual select/cancel/invalid-path acceptance record.
+- Automated Windows native E2E is tracked by [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). Latest observed PR run [#42851122894](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42851122894) failed in the Tauri WebDriver service hook before the mission lifecycle assertions; it remains unverified.
 - No source-content reading or provider egress exists yet.
 - No tool-action approval system exists because the Scout is metadata-only and read-only. The only approval in this slice is the human decision to complete the mission after reviewing its inventory artifact.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
