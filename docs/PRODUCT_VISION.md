@@ -109,3 +109,9 @@ Contoh:
 - "Big horizon. Small honest steps."
 
 **Pikir liar. Gerak cerdas. Kerja serius. Main lepas.**
+
+---
+
+## Canonical document status
+
+This file is a concise vision overview retained for context and historical continuity. The expanded canonical narrative—covering product promise, user journey, differentiators, first-product wedge, and honesty rules—is now [PRODUCT_NARRATIVE.md](PRODUCT_NARRATIVE.md). The normative product and engineering contract is [BLUEPRINT.md](BLUEPRINT.md). If wording or scope diverges, the canonical narrative and blueprint take precedence; implementation tasks are indexed in [ISSUE_MAP.md](ISSUE_MAP.md) and must follow [AI_TASK_PROTOCOL.md](AI_TASK_PROTOCOL.md).
