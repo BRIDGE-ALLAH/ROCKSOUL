@@ -55,11 +55,11 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 ## Known limits and next gates
 
 - The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending and is tracked separately by [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6). See [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md) for the manual select/cancel/invalid-path acceptance record.
-- Automated Windows native E2E is tracked by [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). Latest observed PR run [#42851122894](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42851122894) failed in the Tauri WebDriver service hook before the mission lifecycle assertions; it remains unverified.
+- Automated Windows native lifecycle E2E now passes on commit `02c258c3cc2f17fa429d61bbe8aa830158aa6d33` in [run #42894857711](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42894857711), covering native launch, project/mission creation, Scout, approval, process restart, and SQLite restoration. The current PR is [#3](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/3); manual folder-picker acceptance remains separately tracked by [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6).
 - No source-content reading or provider egress exists yet.
 - No tool-action approval system exists because the Scout is metadata-only and read-only. The only approval in this slice is the human decision to complete the mission after reviewing its inventory artifact.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
-- Platform validation is not complete. The Windows CI compile check passed, but no interactive Windows desktop launch/folder-picker smoke test has been performed. macOS/Linux need separate CI and runtime acceptance.
+- Platform validation is not complete. Automated Windows native lifecycle is green, but the interactive Windows shell folder-picker test has not been recorded. macOS/Linux need separate CI and runtime acceptance.
 - GitHub Actions run [#42831777183](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed on the exact source tree merged to `main`: Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows `cargo check --workspace --all-targets`.
 
 ## Acceptance checklist
@@ -75,5 +75,6 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 - [x] Human approval gate records a separate evidence receipt.
 - [x] CI workflow added.
 - [x] GitHub CI green (run #42832504466 on the merged source tree).
-- [ ] Interactive Windows desktop smoke test completed.
+- [x] Automated Windows native lifecycle E2E passed (run #42894857711).
+- [ ] Interactive Windows shell folder-picker acceptance completed (see [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md)).
 - [ ] Backup/restore and clean-install checks added.
