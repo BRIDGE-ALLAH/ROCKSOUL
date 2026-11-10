@@ -1,6 +1,6 @@
 # Windows desktop smoke test
 
-**Status snapshot: 11 November 2026.** This checklist separates automated WebView interaction from the native Windows shell dialog and from release packaging. Passing one gate must not be represented as passing the others.
+**Status snapshot: 11 November 2026.** Automated native lifecycle E2E passed on commit `02c258c3cc2f17fa429d61bbe8aa830158aa6d33` in [GitHub Actions run #42894857711](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42894857711). This checklist separates automated WebView interaction from the native Windows shell dialog and release packaging. Passing one gate must not be represented as passing the others.
 
 ## Automated Windows native E2E
 
@@ -15,29 +15,30 @@ The fixture is synthetic and contains:
 
 The automated acceptance scenario must prove:
 
-- [ ] The native executable starts and the UI reports a successful connection to the local SQLite vault.
-- [ ] A project is created from the synthetic local directory.
-- [ ] A mission is drafted and persisted.
-- [ ] Workspace Scout runs through the UI and the real Rust IPC boundary.
-- [ ] The JSON inventory artifact contains allowed metadata paths, sizes, and extensions only.
-- [ ] The artifact excludes `.env` and ignored build output and contains none of the README/source/secret sentinel contents.
-- [ ] A read-only inventory evidence receipt is stored.
-- [ ] Explicit human approval records a second receipt and moves the mission to completed.
-- [ ] The native application process is restarted; the project, completed mission, artifact, and both receipts are restored from SQLite.
-- [ ] The synthetic workspace sentinel file is byte-for-byte unchanged.
-- [ ] Test failures retain actionable application logs and sanitized screenshots.
+- [x] The native executable starts and the UI reports a successful connection to the local SQLite vault.
+- [x] A project is created from the synthetic local directory.
+- [x] A mission is drafted and persisted.
+- [x] Workspace Scout runs through the UI and the real Rust IPC boundary.
+- [x] The JSON inventory artifact contains allowed metadata paths, sizes, and extensions only.
+- [x] The artifact excludes `.env` and ignored build output and contains none of the README/source/secret sentinel contents.
+- [x] A read-only inventory evidence receipt is stored.
+- [x] Explicit human approval records a second receipt and moves the mission to completed.
+- [x] The native application process is restarted; the project, completed mission, artifact, and both receipts are restored from SQLite.
+- [x] The synthetic workspace sentinel file is byte-for-byte unchanged.
+- [x] Failure diagnostics are retained as a WebDriver workflow log and sanitized screenshot artifact (verified on a failing CI attempt).
 
 ### Current observed result
 
-The latest observed PR-triggered run is [#42851122894](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42851122894), on commit `9874f4337145b20afb1a65ce87a5be9e7590fa6b`.
+The latest passing PR-triggered run is [#42894857711](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42894857711), on commit `02c258c3cc2f17fa429d61bbe8aa830158aa6d33`.
 
 - Rust core tests, formatting, and Clippy: passed.
-- UI typecheck and production build: passed.
-- Windows native executable build and WebDriver session creation: passed.
-- Windows E2E scenario: **failed; not accepted**. The installed Tauri WebDriver service aborts its worker `before()` hook in `patchBrowserExecute` with `TypeError: Cannot read properties of undefined (reading 'bind')`. The later `vault-status` timeout is a downstream symptom; this run does not establish that the SQLite vault itself failed.
-- Real Windows shell folder-picker interaction: not automated and not yet manually accepted.
+- UI typecheck and production build: passed using the corrected Bun scripts.
+- Windows native executable build and WebDriver session creation: passed with the Vite `dist` assets embedded through Tauri's `custom-protocol` feature.
+- Windows E2E lifecycle: **passed** — native app startup, SQLite vault connection, project/mission creation, metadata-only Scout, artifact and first receipt, explicit approval and second receipt, native process restart, and restoration of project/completed mission/artifact/receipts.
+- Workspace sentinel: unchanged.
+- Real Windows shell folder-picker interaction: not automated and not yet manually accepted; it remains [P0-F02 / issue #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6).
 
-Track automated harness completion in [P0-F01 / issue #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). Do not close that issue until the PR-triggered Windows job and the Linux Rust/UI jobs pass on the same commit.
+The automated P0-F01 harness is tracked in [issue #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). The manual OS dialog is a separate acceptance gate; no automated E2E result is a substitute for it.
 
 ## Manual native folder-picker acceptance
 
