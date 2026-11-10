@@ -363,15 +363,17 @@ impl Store {
         .fetch_optional(&mut *transaction)
         .await?;
 
-        let evidence_count: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM evidence WHERE mission_id = ? AND kind = 'read_only_inventory'")
-                .bind(mission_id)
-                .fetch_one(&mut *transaction)
-                .await?;
+        let evidence_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM evidence WHERE mission_id = ? AND kind = 'read_only_inventory'",
+        )
+        .bind(mission_id)
+        .fetch_one(&mut *transaction)
+        .await?;
 
         if artifact_id.is_none() || evidence_count < 1 {
             return Err(StoreError::InvalidInput(
-                "Approval blocked: the mission has no saved artifact and evidence receipt.".to_string(),
+                "Approval blocked: the mission has no saved artifact and evidence receipt."
+                    .to_string(),
             ));
         }
 
@@ -591,8 +593,8 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::collect_inventory;
     use super::Store;
+    use super::collect_inventory;
     use super::{MAX_INVENTORY_ENTRIES, MAX_INVENTORY_FILES, MAX_WARNINGS};
 
     #[tokio::test]
@@ -641,7 +643,12 @@ mod tests {
         assert_eq!(missions[0].status, "review");
         assert_eq!(store.list_artifacts(&mission.id).await?.len(), 1);
         assert_eq!(store.list_evidence(&mission.id).await?.len(), 1);
-        assert!(store.inspect_workspace(&project.id, &mission.id).await.is_err());
+        assert!(
+            store
+                .inspect_workspace(&project.id, &mission.id)
+                .await
+                .is_err()
+        );
 
         let approved = store.approve_mission(&mission.id).await?;
         assert_eq!(approved.status, "completed");
