@@ -18,9 +18,10 @@ This is a conservative first slice, not a complete sandbox. Directory names and 
 
 ## Important limitations
 
-- The current UI accepts a filesystem path typed by the user. It does not yet provide a native folder-picker capability.
+- The UI uses Tauri's native directory picker. The selected path is canonicalized and validated again in Rust before it is stored as a project root.
 - The app has not yet implemented source-content reads, shell execution, browser automation, model-provider egress, or third-party skills.
 - No production installer, updater, signature verification, or backup/restore workflow is enabled.
+- Human approval is recorded as a separate evidence event. Rust only permits approval after an inventory artifact and evidence receipt exist; the mission cannot be rescanned or approved twice.
 - The current tests do not replace OS-level security testing or a penetration test.
 
 ## Security design rules
