@@ -283,7 +283,7 @@ impl Store {
                 "maxFiles": MAX_INVENTORY_FILES,
                 "maxEntries": MAX_INVENTORY_ENTRIES,
                 "maxDepth": MAX_WALK_DEPTH,
-                "readSourceOrDocumentContents": false,
+                "readSourceDocumentBinaryContents": false,
                 "readIgnoreRules": true,
                 "modifiedWorkspace": false
             })
@@ -381,8 +381,7 @@ impl Store {
             mission_id: mission_id.to_string(),
             artifact_id: artifact_id.clone(),
             kind: "human_approval".to_string(),
-            summary: "User reviewed the local workspace inventory and approved this mission."
-                .to_string(),
+            summary: "User reviewed and approved the workspace inventory.".to_string(),
             source_path: None,
             details_json: json!({
                 "decision": "approved",
