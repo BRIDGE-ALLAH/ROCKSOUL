@@ -8,82 +8,103 @@
 
 Rocksoul is where wild ideas get their hands dirty.
 
-It's a desktop creative-intelligence studio for people who don't want to stop at asking questions. Bring a half-baked idea, a monster problem, a messy repo, a sketch, a research rabbit hole, or a "what if?". Rocksoul helps you explore it, pull the right crew together, make something real, and see whether it actually works.
+It's a local-first desktop creative-intelligence studio for people who don't want to stop at asking questions. Bring a half-baked idea, a monster problem, a messy repo, a sketch, a research rabbit hole, or a "what if?". Rocksoul helps turn it into a mission, find the relevant context, make something concrete, and check whether it actually works.
 
 **Less prompt-loop. More let's-build-this.**
 
+"More Than AGI" is the ambition, not a claim that Rocksoul has achieved or surpassed AGI. "One Step Toward ASI" is a distant research horizon, not a promise or timeline. We build what we can prove.
+
 ## The Rocksoul mindset
 
-We are not here to worship the letters A-G-I. We are here to make intelligence useful, adaptable, creative, and brave enough to get out of the chat box.
+**AGILITY is the move.** Think across disciplines. Switch gears when evidence changes. Try the weird route. Learn from the crash. Keep what works. Turn the next idea into action.
 
-**AGILITY is the move.** Think across disciplines. Switch gears when the facts change. Try the weird route. Learn from the crash. Keep what works. Turn the next idea into action.
+- **Think with chaos:** explore more than one hypothesis and route.
+- **Act with riot:** challenge stale patterns and build the better thing.
+- **Work hard:** care about details and finish the job.
+- **Play hard:** stay curious and keep experimenting.
+- **Stay smart:** move fast when safe; slow down when consequences matter.
 
-- **Think with chaos:** let strange ideas meet; explore more than one route.
-- **Act with riot:** challenge stale patterns and make the better thing.
-- **Work hard:** care about the details, do the hard yards, finish the job.
-- **Play hard:** stay curious; experiment; don't let the craft go stale.
-- **Stay smart:** move fast when you can, slow down when it matters.
+AGILITY means Adaptive, Generative, Intelligent, Grounded, Integrated, Tactical, and Human-led. It describes the product's operating philosophy, not an AGI score or capability claim.
 
-"More Than AGI" is our big attitude, not a claim that Rocksoul already has AGI or has surpassed it. "One Step Toward ASI" is a long-range ambition, not a promised timeline or guaranteed path. We build what we can prove, and stay honest about what we can't.
+## The creative loop
 
-## What we're building
+1. **SPARK** — bring the idea, question, sketch, link, note, or problem.
+2. **RIFF** — define context, objective, scope, constraints, and success criteria.
+3. **THE PIT** — assemble the right human, model, specialist role, skill, and tool under explicit contracts.
+4. **FORGE** — research, design, write, code, or create a concrete artifact.
+5. **SOUND CHECK** — inspect sources, test criteria, challenge assumptions, and expose uncertainty.
+6. **STAGE** — approve, export, publish, hand off, revise, or stop.
 
-A creative-intelligence engine that brings the pieces of real work together:
+Go wild while exploring. Get precise before shipping. Every important operation should leave evidence that can be inspected.
 
-- **Projects with memory:** briefs, notes, sources, decisions, and files stay connected.
-- **A thinking space:** explore options, challenge assumptions, sketch plans, and branch ideas.
-- **A crew, not a mystery swarm:** assign clear jobs to models, agents, and tools.
-- **Real making:** turn research into reports, ideas into prototypes, and plans into working artifacts.
-- **A proper sound check:** inspect sources, run tests, compare versions, and call out what is still uncertain.
-- **Your work, your call:** local-first storage, clear permissions, and a human hand on consequential actions.
+## What makes Rocksoul different
 
-Rocksoul should feel free in the creative moments and solid when the work gets serious.
+- **Chaos-to-Order:** preserve competing hypotheses and routes, then converge using evidence.
+- **A crew that can disagree:** roles have bounded tasks and budgets; disagreement is visible rather than hidden by fake consensus.
+- **Memory with provenance:** events, facts, interpretations, procedures, and preferences remain distinct and correctable.
+- **Proof-carrying creation:** artifacts carry source references, versions, tests, approvals, and limitations.
+- **A controlled workbench:** local files, providers, browser, desktop, CLI, and media use typed capability boundaries—not an unrestricted agent shell.
+- **Human-led authority:** user goals, grants, and consequential decisions remain under human control.
 
-## The six-beat creative loop
+## First product wedge
 
-1. **SPARK** — drop the thought, question, sketch, link, voice note, or problem.
-2. **RIFF** — give it context: what matters, what's off-limits, and what success looks like.
-3. **THE PIT** — bring in the right agents, models, tools, and human collaborators.
-4. **FORGE** — make the thing: research, code, design, prototype, plan, or media.
-5. **SOUND CHECK** — test it, challenge it, check the receipts, and find the weak spots.
-6. **STAGE** — approve it, export it, publish it, or pass it on.
+The first useful product is one reliable local-first mission:
+- keep projects and mission state on the device;
+- select sources explicitly;
+- compile a bounded, inspectable context;
+- use a reviewed provider only when policy and consent allow it;
+- propose a typed plan and use registered read-only tools;
+- verify acceptance criteria with evidence;
+- persist artifacts and history across restart.
 
-Go wild while exploring. Get precise before shipping. Every important action should leave a trail you can inspect.
+The current `main` branch is earlier than this target. It contains the first local-mission slice: native folder selection wiring, local projects/missions, a bounded metadata-only Workspace Scout, a SHA-256 artifact, evidence receipt, and explicit human approval. It does not yet include source-content context compilation, a provider adapter, a general tool registry, or autonomous agent execution.
 
-## Bigger horizons, no fake promises
+## Canonical product contract
 
-Rocksoul is built for a long game:
+These documents now define the single source of truth:
 
-1. **Useful now:** dependable creative workflows, tools, and human control.
-2. **More adaptive:** better context, cross-domain work, planning, recovery, and learning from feedback.
-3. **AGI as a research horizon:** test generality on unfamiliar tasks, not just polished demos.
-4. **ASI as a distant question:** explore what greater-than-human capabilities could mean—and what safety, governance, and responsibility they would demand.
+- [Product narrative](docs/PRODUCT_NARRATIVE.md) — product promise, audience, identity, experience, and honest capability claims.
+- [Normative blueprint](docs/BLUEPRINT.md) — architecture, domain model, lifecycle, UX rules, security boundaries, data handling, test gates, and phase exit criteria.
+- [AI task protocol](docs/AI_TASK_PROTOCOL.md) — how small local coding agents execute one issue safely and autonomously within its scope.
+- [Issue map and dependency index](docs/ISSUE_MAP.md) — all task IDs, GitHub links, acceptance-check counts, and major sequencing gates.
+- [Program tracker](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/4) — phase-level checklist for the full delivery program.
 
-There is no guaranteed ladder from today's AI to AGI or ASI. A tagline is not a benchmark. We earn every capability claim with evidence.
+The blueprint is normative. Child issues narrow implementation scope but may not weaken its security or product invariants.
 
-## Tech direction
+## Delivery tracker
 
-Rocksoul is being built Rust-first: **Rust 1.99 + Tauri 2.12 + React 19.3 + Vite 8.3 + SQLite/SQLx 0.9**. Rust owns persistence and the trust boundary; React owns the creative desktop surface. The exact pinned toolchain and trade-offs live in [docs/TECH_STACK.md](docs/TECH_STACK.md).
+The program is decomposed into **100 small task issues** across P0–P7 and OPS. Each task has a bounded outcome, dependencies, implementation specification, design/engineering rules, explicit exclusions, checkbox acceptance criteria, verification, and AI-agent handoff.
+
+Start at [Issue #4](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/4), then choose the smallest open issue whose dependencies are already merged. Do not assign a small local agent a whole phase.
+
+## Current implementation status
+
+The first local-mission slice was merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). [CI run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, five core tests, Clippy, UI typecheck/production build, and Windows compile checking.
+
+The next Windows native E2E work is tracked by [draft PR #3](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/3) and [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). The latest observed run on that PR, [#42847161238](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42847161238), failed in the Windows E2E job; it is **not accepted as passed**. The real Windows shell folder-picker select/cancel check is a separate manual gate in [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6).
+
+This is prototype code, not a release-ready installer. Backup/restore, installer signing, updates, clean-machine installation, recovery, and release security gates remain open.
+
+## Technical direction
+
+Rust owns persistence, filesystem boundaries, policy, credentials, provider transport, processes, tools, and evidence. React/TypeScript owns the desktop presentation and interaction layer. The exact dependencies and rationale live in [TECH_STACK.md](docs/TECH_STACK.md); the normative boundary lives in [BLUEPRINT.md](docs/BLUEPRINT.md).
+
+## Existing engineering references
+
+- [Architecture overview](docs/ARCHITECTURE.md)
+- [Tech stack](docs/TECH_STACK.md)
+- [Repository/ecosystem audit](docs/AUDIT.md)
+- [Idea Lab](docs/IDEA_LAB.md)
+- [Research Radar](docs/RESEARCH_RADAR.md)
+- [First local mission slice](docs/FIRST_SLICE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Security posture](SECURITY.md)
+- [Repository agent rules](AGENTS.md)
 
 ## License
 
 No open-source license has been selected yet. Until the project owner publishes one, default copyright restrictions apply; do not assume permission to reuse or redistribute this code.
 
-## Where we are
-
-The first local-mission implementation has been merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2): native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and an explicit human approval gate. [GitHub Actions run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, all 5 core tests, Clippy, the UI typecheck/production build, and the Windows desktop compile check. It remains **prototype code, not a release-ready installer**; an interactive Windows desktop smoke test, backup/restore, signing, updates, and clean-machine installation checks are still release gates. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
-
-## Start here
-
-- [Product vision](docs/PRODUCT_VISION.md)
-- [Research radar — GitHub trends and papers](docs/RESEARCH_RADAR.md)
-- [Technical stack](docs/TECH_STACK.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Repository and ecosystem audit](docs/AUDIT.md)
-- [Wild idea lab](docs/IDEA_LAB.md)
-- [First local mission slice](docs/FIRST_SLICE.md)
-- [Security posture](SECURITY.md)
-- [Roadmap and quality gates](docs/ROADMAP.md)
-
 ---
+
 **ROCKSOUL. THINK WITH CHAOS. ACT WITH RIOT.**
