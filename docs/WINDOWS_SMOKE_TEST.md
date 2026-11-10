@@ -4,7 +4,9 @@ This is the native desktop acceptance checklist for the first local-mission slic
 
 ## Automated Windows E2E
 
-The GitHub Actions Windows job builds and launches the actual Tauri executable through WebDriverIO and Microsoft Edge WebDriver. It creates a synthetic workspace and checks:
+The GitHub Actions Windows job compiles and launches the actual Tauri desktop executable in the Rust **debug profile** through WebDriverIO and Microsoft Edge WebDriver. It still exercises the real Rust IPC handlers and local SQLite vault; this is not browser preview mode and no application commands or persistence are mocked. The unoptimized profile keeps the E2E job focused on behavior rather than release-profile thin-LTO link time.
+
+It creates a synthetic workspace and checks:
 
 - Native app startup and local SQLite vault connection.
 - Creating a project from a real local directory path.
@@ -38,11 +40,18 @@ Run this on a real interactive Windows desktop session:
 
 ## Local commands
 
-From the repository root:
+From the repository root, build and launch the native debug executable used by the automated interaction test:
 
 ~~~powershell
 bun install
 bun run ui:build
+cargo build -p rocksoul-desktop
+.\target\debug\rocksoul-desktop.exe
+~~~
+
+To validate the optimized release executable separately:
+
+~~~powershell
 cargo build --release -p rocksoul-desktop
 .\target\release\rocksoul-desktop.exe
 ~~~
