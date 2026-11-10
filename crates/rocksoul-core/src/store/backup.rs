@@ -251,7 +251,10 @@ mod tests {
 
     use serde_json::from_slice;
     use sha2::{Digest, Sha256};
-    use sqlx::{Connection, SqliteConnection, sqlite::{SqliteConnectOptions, SqliteJournalMode}};
+    use sqlx::{
+        Connection, SqliteConnection,
+        sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    };
     use tempfile::tempdir;
 
     use super::{BackupManifest, Store};
