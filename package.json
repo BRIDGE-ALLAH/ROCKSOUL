@@ -1,0 +1,21 @@
+{
+  "name": "rocksoul",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "bun@1.4.4",
+  "workspaces": [
+    "apps/desktop/ui"
+  ],
+  "scripts": {
+    "ui:dev": "bun --cwd apps/desktop/ui run dev",
+    "ui:build": "bun --cwd apps/desktop/ui run build",
+    "ui:check": "bun --cwd apps/desktop/ui run check",
+    "desktop:dev": "cd apps/desktop/src-tauri && bunx tauri dev",
+    "desktop:build": "cd apps/desktop/src-tauri && bunx tauri build",
+    "test:core": "cargo test -p rocksoul-core",
+    "check:rust": "cargo fmt --all -- --check && cargo clippy -p rocksoul-core --all-targets -- -D warnings"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}
