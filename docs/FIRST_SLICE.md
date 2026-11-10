@@ -6,13 +6,14 @@ This slice connects a real local project to a durable mission, performs one boun
 
 ## What is implemented
 
-1. **Local project registry** — project name and canonical workspace path are stored in the app-local SQLite database.
-2. **Mission drafting** — mission title/objective are validated and stored with a `draft` status.
-3. **Workspace Scout** — traverses a bounded directory tree, respects Git ignore rules, does not follow symlinks, and only reads file metadata (path, size, extension).
-4. **Sensitive-name exclusions** — common secrets/config files, build output, package directories, and local Rocksoul state are omitted.
-5. **Artifact creation** — the workspace inventory is stored as structured JSON and hashed with SHA-256.
-6. **Evidence receipt** — operation summary, scope, file count, limits, and no-content/no-write assertions are stored in the same database transaction as the artifact.
-7. **Review status** — a successful inventory moves the mission to `review`, never directly to `completed`.
+1. **Native folder selection** — the Tauri dialog lets the user choose a directory; Rust canonicalizes and validates it before creating the project.
+2. **Local project registry** — project name and canonical workspace path are stored in the app-local SQLite database.
+3. **Mission drafting** — mission title/objective are validated and stored with a `draft` status.
+4. **Workspace Scout** — traverses a bounded directory tree, respects Git ignore rules, does not follow symlinks, and only reads file metadata (path, size, extension).
+5. **Sensitive-name exclusions** — common secrets/config files, build output, package directories, and local Rocksoul state are omitted.
+6. **Artifact creation** — the workspace inventory is stored as structured JSON and hashed with SHA-256.
+7. **Evidence receipt** — operation summary, scope, file count, limits, and no-content/no-write assertions are stored in the same database transaction as the artifact.
+8. **Human review and approval** — a successful inventory moves the mission to `review`. The user can inspect the artifact and receipts, then explicitly approve it. Approval is itself recorded as evidence and moves the mission to `completed`.
 
 ## What the Scout does not do
 
@@ -52,7 +53,7 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 
 ## Known limits and next gates
 
-- Folder selection currently uses a path field; a native directory picker needs a deliberate permission review.
+- The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending.
 - No source-content reading or provider egress exists yet.
 - No action approval system exists because the Scout is metadata-only and read-only.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
@@ -68,6 +69,8 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 - [x] Unit tests cover persistence and safety exclusions.
 - [x] Tauri command boundary added.
 - [x] React desktop UI connected to commands.
+- [x] Native directory picker wired through a scoped dialog capability.
+- [x] Human approval gate records a separate evidence receipt.
 - [x] CI workflow added.
 - [ ] GitHub CI green.
 - [ ] Interactive Windows desktop smoke test completed.
