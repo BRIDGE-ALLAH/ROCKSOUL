@@ -20,6 +20,9 @@ pub enum StoreError {
     #[error("Filesystem error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Backup operation failed: {0}")]
+    Backup(String),
+
     #[error("Background inventory task failed: {0}")]
     Task(String),
 }
