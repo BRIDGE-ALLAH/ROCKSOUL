@@ -66,6 +66,28 @@ jobs:
         run: bun run ui:check
       - name: Build UI
         run: bun run ui:build
+
+  desktop-windows:
+    name: Windows desktop build and E2E smoke test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - name: Install UI dependencies
+        run: bun install
+      - name: Compile all Rust targets
+        run: cargo check --workspace --all-targets
+      - name: Build UI
+        run: bun run ui:build
       - name: Build native desktop executable
         run: cargo build --release -p rocksoul-desktop
       - name: Prepare synthetic local workspace
@@ -103,25 +125,3 @@ jobs:
           name: rocksoul-windows-e2e-diagnostics
           path: apps/desktop/e2e/test-results/
           if-no-files-found: ignore
-
-  desktop-windows:
-    name: Windows desktop build and E2E smoke test
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.99.0
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            . -> target
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.4
-      - name: Install UI dependencies
-        run: bun install
-      - name: Compile all Rust targets
-        run: cargo check --workspace --all-targets
-      - name: Build UI
-        run: bun run ui:build
