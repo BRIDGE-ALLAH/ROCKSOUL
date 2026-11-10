@@ -590,7 +590,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::Store;
+    use super::{collect_inventory, Store, MAX_INVENTORY_ENTRIES, MAX_INVENTORY_FILES, MAX_WARNINGS};
 
     #[tokio::test]
     async fn project_mission_inventory_and_evidence_survive_reopen() -> Result<(), Box<dyn Error>> {
@@ -692,6 +692,20 @@ mod tests {
                 .await
                 .is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn inventory_caps_total_entries_even_when_folders_are_empty() -> Result<(), Box<dyn Error>> {
+        let temporary = tempdir()?;
+        for index in 0..(MAX_INVENTORY_ENTRIES + 50) {
+            fs::create_dir(temporary.path().join(format!("empty-{index:04}")))?;
+        }
+
+        let (files, truncated, warnings) = collect_inventory(temporary.path());
+        assert!(truncated);
+        assert!(files.len() <= MAX_INVENTORY_FILES);
+        assert!(warnings.len() <= MAX_WARNINGS);
         Ok(())
     }
 
