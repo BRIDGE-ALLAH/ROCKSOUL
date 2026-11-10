@@ -1,5 +1,7 @@
 # ROCKSOUL — ARCHITECTURE
 
+> **Normative authority:** this file is an explanatory architecture overview. The versioned [BLUEPRINT.md](BLUEPRINT.md) is the authoritative architecture, domain, security, data, and release contract. The [PRODUCT_NARRATIVE.md](PRODUCT_NARRATIVE.md) defines product intent; [ISSUE_MAP.md](ISSUE_MAP.md) indexes the executable work.
+
 ## The big shape
 
 Rocksoul is a **local-first desktop application with a Rust-owned execution core**. Not a microservice estate. Not a web app with an unrestricted shell bolted on.
