@@ -396,10 +396,11 @@ export default function App() {
                 required
               />
             </label>
-            <label>
-              Existing folder path
+            <div className="folder-field">
+              <label htmlFor="project-root-path">Existing folder path</label>
               <div className="path-field">
                 <input
+                  id="project-root-path"
                   value={rootPath}
                   onChange={(event) => setRootPath(event.target.value)}
                   placeholder="Choose a local folder..."
@@ -408,13 +409,14 @@ export default function App() {
                 <button
                   className="browse-button"
                   type="button"
+                  aria-label="Browse for an existing project folder"
                   onClick={() => void handleBrowseFolder()}
                   disabled={busy || !inDesktop}
                 >
                   BROWSE
                 </button>
               </div>
-            </label>
+            </div>
             <button className="button button-lime" type="submit" disabled={busy || !inDesktop}>
               LINK PROJECT <span>↗</span>
             </button>
