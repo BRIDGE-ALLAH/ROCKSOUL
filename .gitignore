@@ -1,0 +1,32 @@
+# Rust
+/target/
+**/target/
+
+# JavaScript / Bun
+node_modules/
+**/node_modules/
+apps/desktop/ui/dist/
+.bun/
+
+# Local databases and runtime state
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+.rocksoul-local/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
