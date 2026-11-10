@@ -8,10 +8,7 @@ use std::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::{
-    Connection, SqliteConnection,
-    sqlite::SqliteConnectOptions,
-};
+use sqlx::{Connection, SqliteConnection, sqlite::SqliteConnectOptions};
 use uuid::Uuid;
 
 use super::Store;
@@ -150,10 +147,9 @@ impl Store {
         )
         .await?;
 
-        let integrity_result: String =
-            sqlx::query_scalar("PRAGMA integrity_check")
-                .fetch_one(&mut snapshot)
-                .await?;
+        let integrity_result: String = sqlx::query_scalar("PRAGMA integrity_check")
+            .fetch_one(&mut snapshot)
+            .await?;
         if integrity_result != "ok" {
             return Err(StoreError::Backup(format!(
                 "SQLite integrity_check rejected the staged snapshot: {integrity_result}"
@@ -302,8 +298,16 @@ mod tests {
         let bundle_entries = fs::read_dir(&backup.backup_directory)?
             .map(|entry| entry.map(|entry| entry.file_name()))
             .collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(bundle_entries.len(), 2, "only the database and manifest are finalized");
-        assert!(!bundle_entries.iter().any(|name| name.to_string_lossy().ends_with(".partial")));
+        assert_eq!(
+            bundle_entries.len(),
+            2,
+            "only the database and manifest are finalized"
+        );
+        assert!(
+            !bundle_entries
+                .iter()
+                .any(|name| name.to_string_lossy().ends_with(".partial"))
+        );
 
         // Open the snapshot as a separate local store and prove that the
         // project and mission committed to the source WAL are in the snapshot.
@@ -332,8 +336,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn invalid_backup_destination_leaves_live_database_usable()
-    -> Result<(), Box<dyn Error>> {
+    async fn invalid_backup_destination_leaves_live_database_usable() -> Result<(), Box<dyn Error>>
+    {
         let temporary = tempdir()?;
         let workspace = temporary.path().join("workspace");
         fs::create_dir_all(&workspace)?;
