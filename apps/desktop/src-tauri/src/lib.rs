@@ -9,7 +9,11 @@ struct AppState {
 
 #[tauri::command]
 async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
-    state.store.list_projects().await.map_err(|error| error.to_string())
+    state
+        .store
+        .list_projects()
+        .await
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command(rename_all = "camelCase")]
