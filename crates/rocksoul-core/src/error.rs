@@ -19,4 +19,7 @@ pub enum StoreError {
 
     #[error("Filesystem error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("Background inventory task failed: {0}")]
+    Task(String),
 }
