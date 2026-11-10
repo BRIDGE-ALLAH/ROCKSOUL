@@ -31,6 +31,33 @@ Sources:
 
 **Data caveat:** githubtrending.today states that it is not affiliated with GitHub and copies rankings/stars from github.com/trending at the collection time. Star velocity is attention, not quality, security, maintenance, or product-market fit. Always inspect license, last activity, issue health, code, release discipline, and threat model before adopting a dependency.
 
+## 1B. Trendshift — momentum, persistence, and fragmentation
+
+Trendshift adds a different lens from a daily GitHub Trending snapshot:
+
+- Its **Topics** page groups repositories into AI-curated areas. The November 2026 view shows strong displayed topic totals for **AI agent (206.8k)**, **AI skills (178.1k)**, and **AI coding assistant (145.8k)**, followed by curated lists, learning resources, LLM gateways, inference, MCP, and AI memory. Treat these as Trendshift's displayed topic metrics, not as a universal measure of adoption.
+- Its **Yearly** view explicitly aims to surface repositories with sustained momentum, not just one hot month. The page lists (displayed “Gained this year” values): `openclaw/openclaw` 398.9k, `morluto/rea` 448.4k, `obra/superpowers` 303.8k, `mattpocock/skills` 318.1k, `affaan-m/ECC` 301.8k, `NousResearch/hermes-agent` 263.2k, `deepseek-ai/deepseek-harness` 262.4k, and `anthropics/skills` 162k. These values are volatile and should be rechecked before making adoption decisions.
+- Its **Fragmentation Index** describes how concentrated or splintered a topic is across GitHub star share. This is useful as a market-structure signal: is one project dominating a category, or are multiple approaches competing? The page currently exposes monthly insight periods through October 2026; do not invent a November index result where none is displayed.
+- Trendshift also spotlights **Busbar** (“Control what AI can do before it acts”), **Bifrost** (AI gateway routing/governance/security), and **Omnigraph** (versioned graph database with Git-style workflows and multimodal retrieval). These are signals worth inspecting, not automatic dependencies.
+
+Sources:
+- [Trendshift Topics](https://trendshift.io/topics)
+- [Trendshift Yearly](https://trendshift.io/yearly)
+- [Trendshift monthly insights and Fragmentation Index](https://trendshift.io/insights)
+- [Trendshift repository momentum example: OpenClaw](https://trendshift.io/repositories/19374)
+
+### What this changes for Rocksoul
+
+1. **Skills are a first-class product surface.** Make skills portable, inspectable, versioned, permission-declaring, and testable. Do not hardwire one vendor's prompt format into the core.
+2. **Harness quality is the moat.** Treat model choice as replaceable. Invest in mission state, context, capability enforcement, recovery, observability, and evaluation.
+3. **Memory has to earn trust.** Build typed, provenance-bearing project memory—not an opaque transcript dump or vector DB by default.
+4. **Policy is a user-facing superpower.** Make permissions, data egress, and action scope understandable before a tool acts.
+5. **Computer use is moving beyond screenshots.** Prefer semantic/accessibility interfaces, and make every interaction observable and verifiable.
+6. **Parallelism needs isolation.** Use per-mission Git worktrees and merge gates; don't let agents share one writable workspace.
+7. **Don't copy a winner's entire architecture.** Adopt the problem-solving pattern only after evaluating code quality, licenses, maintenance, and fit.
+
+GitHub Trending answers “what is spiking now?” Trendshift's yearly and topic views help answer “what is sticking, and how is the field splitting into subproblems?” Neither answers “what should Rocksoul depend on?” That still needs a code, security, license, and maintenance audit.
+
 ## 2. The trend shift
 
 ### From model worship to harness engineering
