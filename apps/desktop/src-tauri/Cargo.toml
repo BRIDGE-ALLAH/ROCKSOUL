@@ -1,0 +1,17 @@
+[package]
+name = "rocksoul-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "rocksoul_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+rocksoul-core = { path = "../../../crates/rocksoul-core" }
+tauri = { version = "2.12.5", features = [] }
