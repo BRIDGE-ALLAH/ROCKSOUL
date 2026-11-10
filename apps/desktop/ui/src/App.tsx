@@ -531,8 +531,8 @@ export default function App() {
             <span className="tool-state">READY</span>
           </div>
           <p className="crew-copy">
-            Maps file names, sizes, and types. Respects .gitignore. Skips common secret files,
-            build output, dependencies, and symlinks. Does not read file contents.
+            Maps file names, sizes, and types. Reads Git ignore rules, skips common secret files,
+            build output, dependencies, and symlinks. Does not open source, document, or binary contents.
           </p>
           <div className="permission-list">
             <div><span className="yes">✓</span> List project files</div>
