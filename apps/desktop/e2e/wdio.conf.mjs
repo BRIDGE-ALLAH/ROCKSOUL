@@ -22,6 +22,7 @@ export const config = {
   capabilities: [
     {
       browserName: "tauri",
+      "wdio:enforceWebDriverClassic": true,
       "tauri:options": {
         application: appBinaryPath,
       },
