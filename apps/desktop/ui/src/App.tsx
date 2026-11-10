@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 
 type Project = {
   id: string;
@@ -204,6 +205,24 @@ export default function App() {
     }
   }
 
+  async function handleBrowseFolder() {
+    if (!inDesktop || busy) return;
+    setError("");
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Choose a local project folder",
+      });
+      if (typeof selected === "string") {
+        setRootPath(selected);
+        setNotice("Folder selected. Link it to create a local project.");
+      }
+    } catch (cause) {
+      setError(String(cause));
+    }
+  }
+
   async function handleCreateProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -285,6 +304,32 @@ export default function App() {
     }
   }
 
+  async function handleApproveMission() {
+    if (!selectedMission || selectedMission.status !== "review") return;
+    setBusy(true);
+    setError("");
+    try {
+      desktopOnly();
+      const updated = await invoke<Mission>("approve_mission", {
+        missionId: selectedMission.id,
+      });
+      setMissions((current) => current.map((mission) =>
+        mission.id === updated.id ? updated : mission
+      ));
+      const [nextArtifacts, nextEvidence] = await Promise.all([
+        invoke<Artifact[]>("list_artifacts", { missionId: updated.id }),
+        invoke<Evidence[]>("list_evidence", { missionId: updated.id }),
+      ]);
+      setArtifacts(nextArtifacts);
+      setEvidence(nextEvidence);
+      setNotice("Mission approved. The artifact and its evidence stay on this device.");
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -353,12 +398,22 @@ export default function App() {
             </label>
             <label>
               Existing folder path
-              <input
-                value={rootPath}
-                onChange={(event) => setRootPath(event.target.value)}
-                placeholder="C:\\work\\my-project"
-                required
-              />
+              <div className="path-field">
+                <input
+                  value={rootPath}
+                  onChange={(event) => setRootPath(event.target.value)}
+                  placeholder="Choose a local folder..."
+                  required
+                />
+                <button
+                  className="browse-button"
+                  type="button"
+                  onClick={() => void handleBrowseFolder()}
+                  disabled={busy || !inDesktop}
+                >
+                  BROWSE
+                </button>
+              </div>
             </label>
             <button className="button button-lime" type="submit" disabled={busy || !inDesktop}>
               LINK PROJECT <span>↗</span>
@@ -485,11 +540,31 @@ export default function App() {
             className="button button-ink"
             type="button"
             onClick={() => void handleInspect()}
-            disabled={busy || !selectedMission || !inDesktop}
+            disabled={busy || !selectedMission || !inDesktop || selectedMission.status === "review" || selectedMission.status === "completed"}
           >
-            {busy ? "WORKING..." : "RUN SOUND CHECK"} <span>↗</span>
+            {busy ? "WORKING..." : selectedMission?.status === "review" || selectedMission?.status === "completed" ? "SOUND CHECK SAVED" : "RUN SOUND CHECK"} <span>↗</span>
           </button>
-          <p className="tiny-note">This action writes only to Rocksoul's local database.</p>
+          {selectedMission?.status === "review" && (
+            <div className="approval-card">
+              <strong>THE TAKE IS READY FOR REVIEW.</strong>
+              <p>Inspect the inventory and evidence on the right. Approval closes this mission; it does not publish or upload anything.</p>
+              <button
+                className="button button-lime"
+                type="button"
+                onClick={() => void handleApproveMission()}
+                disabled={busy || !inDesktop}
+              >
+                {busy ? "SAVING..." : "APPROVE & COMPLETE"} <span>✓</span>
+              </button>
+            </div>
+          )}
+          {selectedMission?.status === "completed" && (
+            <div className="approval-card approved">
+              <strong>MISSION APPROVED ✓</strong>
+              <p>Artifact and evidence are stored locally. No project files were changed.</p>
+            </div>
+          )}
+          <p className="tiny-note">Scout writes only to Rocksoul's local database. Approval records your review decision.</p>
         </aside>
       </section>
 
