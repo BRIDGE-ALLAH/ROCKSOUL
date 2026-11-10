@@ -207,6 +207,7 @@ export default function App() {
 
   async function handleBrowseFolder() {
     if (!inDesktop || busy) return;
+    setBusy(true);
     setError("");
     try {
       const selected = await open({
@@ -220,6 +221,8 @@ export default function App() {
       }
     } catch (cause) {
       setError(String(cause));
+    } finally {
+      setBusy(false);
     }
   }
 
