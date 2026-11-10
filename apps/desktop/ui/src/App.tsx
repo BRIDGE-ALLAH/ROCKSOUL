@@ -72,7 +72,14 @@ export default function App() {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("Local vault ready. Nothing has been inspected yet.");
+  const [vaultState, setVaultState] = useState<"preview" | "connecting" | "ready" | "error">(
+    isTauri() ? "connecting" : "preview",
+  );
+  const [notice, setNotice] = useState(() =>
+    isTauri()
+      ? "Connecting to the local vault..."
+      : "Browser preview only. Open the desktop app to connect local tools.",
+  );
 
   const inDesktop = isTauri();
   const selectedProject = useMemo(
@@ -126,11 +133,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!inDesktop) return;
-    void refreshProjects().catch((cause: unknown) => {
-      setError(String(cause));
-      setNotice("The local vault could not be opened.");
-    });
+    if (!inDesktop) {
+      setVaultState("preview");
+      return;
+    }
+
+    setVaultState("connecting");
+    void refreshProjects()
+      .then(() => {
+        setVaultState("ready");
+        setNotice("Local vault connected. Projects are stored on this device.");
+      })
+      .catch((cause: unknown) => {
+        setVaultState("error");
+        setError(String(cause));
+        setNotice("The local vault could not be opened.");
+      });
   }, [inDesktop, refreshProjects]);
 
   async function handleSelectProject(nextProjectId: string) {
@@ -274,9 +292,15 @@ export default function App() {
           ROCK<span>SOUL</span><i>®</i>
         </a>
         <div className="topline">CREATIVE INTELLIGENCE / LOCAL FIRST</div>
-        <div className={inDesktop ? "status-chip online" : "status-chip"}>
+        <div className={vaultState === "ready" ? "status-chip online" : vaultState === "error" ? "status-chip error-state" : "status-chip"}>
           <span className="status-dot" />
-          {inDesktop ? "LOCAL VAULT" : "PREVIEW MODE"}
+          {vaultState === "ready"
+            ? "LOCAL VAULT"
+            : vaultState === "connecting"
+              ? "CONNECTING"
+              : vaultState === "error"
+                ? "VAULT ERROR"
+                : "PREVIEW MODE"}
         </div>
       </header>
 
