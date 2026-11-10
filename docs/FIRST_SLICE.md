@@ -54,7 +54,8 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 
 ## Known limits and next gates
 
-- The native folder picker is wired through Tauri's `dialog:allow-open` capability; interactive OS-level testing is still pending.
+- A Windows WebDriver E2E test now exercises the real Tauri process, local project/mission creation, Scout, approval, application restart, and SQLite restoration. Its first CI run is pending.
+- The native folder picker is wired through Tauri's `dialog:allow-open` capability. The Windows shell dialog is outside the WebView DOM and still needs the manual acceptance steps in [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md).
 - No source-content reading or provider egress exists yet.
 - No tool-action approval system exists because the Scout is metadata-only and read-only. The only approval in this slice is the human decision to complete the mission after reviewing its inventory artifact.
 - No event ledger, backup UI, restore UI, or database encryption has been implemented.
@@ -74,5 +75,6 @@ The desktop shell is not yet packaged for distribution. Tauri bundling remains d
 - [x] Human approval gate records a separate evidence receipt.
 - [x] CI workflow added.
 - [x] GitHub CI green (run #42832504466 on the merged source tree).
-- [ ] Interactive Windows desktop smoke test completed.
+- [ ] Windows native lifecycle E2E green on the current branch.
+- [ ] Manual native folder-picker acceptance completed (see [WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md)).
 - [ ] Backup/restore and clean-install checks added.
