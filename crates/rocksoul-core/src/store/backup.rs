@@ -358,16 +358,20 @@ mod tests {
         sqlx::query("CREATE TABLE lock_fixture (id INTEGER PRIMARY KEY)")
             .execute(&mut lock_owner)
             .await?;
-        sqlx::query("BEGIN EXCLUSIVE")
-            .execute(&mut lock_owner)
-            .await?;
-
+        // Open the contender before taking the exclusive lock. Opening a
+        // SQLite connection can itself touch journal metadata, so doing this
+        // afterward would test connection setup rather than the retry path.
         let contender_options = SqliteConnectOptions::new()
             .filename(&database)
             .create_if_missing(false)
             .journal_mode(SqliteJournalMode::Delete)
             .busy_timeout(Duration::from_millis(10));
         let mut contender = SqliteConnection::connect_with(&contender_options).await?;
+
+        sqlx::query("BEGIN EXCLUSIVE")
+            .execute(&mut lock_owner)
+            .await?;
+
         let busy_error = sqlx::query("BEGIN IMMEDIATE")
             .execute(&mut contender)
             .await
