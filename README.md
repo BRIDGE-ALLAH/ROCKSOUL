@@ -73,12 +73,19 @@ No open-source license has been selected yet. Until the project owner publishes 
 
 The first local-mission implementation has been merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2): native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and an explicit human approval gate. [GitHub Actions run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, all 5 core tests, Clippy, the UI typecheck/production build, and the Windows desktop compile check. It remains **prototype code, not a release-ready installer**; an interactive Windows desktop smoke test, backup/restore, signing, updates, and clean-machine installation checks are still release gates. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## Product and engineering source of truth
+
+- [Product narrative](docs/PRODUCT_NARRATIVE.md) — positioning, AGILITY, creative loop, brand voice, and honest capability promises.
+- [Canonical product & engineering blueprint](docs/BLUEPRINT.md) — architecture boundaries, domain contracts, security, mission lifecycle, UX, evaluation, phases, and release gates.
+- [AI task protocol](docs/AI_TASK_PROTOCOL.md) — safe, small, independently verifiable work for local autonomous coding agents.
+- [Issue map](docs/ISSUE_MAP.md) — phase-by-phase task index with dependencies and blueprint traceability.
+
 ## Start here
 
-- [Product vision](docs/PRODUCT_VISION.md)
+- [Product vision compatibility page](docs/PRODUCT_VISION.md)
 - [Research radar — GitHub trends and papers](docs/RESEARCH_RADAR.md)
 - [Technical stack](docs/TECH_STACK.md)
-- [Architecture](docs/ARCHITECTURE.md)
+- [Architecture detail](docs/ARCHITECTURE.md)
 - [Repository and ecosystem audit](docs/AUDIT.md)
 - [Wild idea lab](docs/IDEA_LAB.md)
 - [First local mission slice](docs/FIRST_SLICE.md)
