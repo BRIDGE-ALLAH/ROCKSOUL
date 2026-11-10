@@ -95,8 +95,11 @@ jobs:
         run: cargo check --workspace --all-targets
       - name: Build UI
         run: bun run ui:build
-      - name: Build native desktop executable
-        run: cargo build --release -p rocksoul-desktop
+      - name: Build native desktop executable for E2E
+        # E2E validates real Tauri + Rust IPC + SQLite behavior. Debug profile
+        # avoids the release profile's thin-LTO link cost without replacing
+        # the native application with a browser preview or mocked commands.
+        run: cargo build -p rocksoul-desktop
       - name: Prepare synthetic local workspace
         shell: pwsh
         run: |
