@@ -212,7 +212,12 @@ impl Store {
             ));
         }
 
-        let (files, truncated, warnings) = collect_inventory(&root);
+        let inventory_root = root.clone();
+        let (files, truncated, warnings) = tokio::task::spawn_blocking(move || {
+            collect_inventory(&inventory_root)
+        })
+        .await
+        .map_err(|error| StoreError::Task(error.to_string()))?;
         let mut extensions = BTreeMap::<String, usize>::new();
         for file in &files {
             *extensions.entry(file.extension.clone()).or_default() += 1;
@@ -423,12 +428,22 @@ fn is_excluded_name(name: &str) -> bool {
             | "venv"
             | "__pycache__"
             | ".rocksoul"
+            | ".ssh"
+            | ".aws"
+            | ".azure"
+            | ".kube"
+            | ".gnupg"
+            | ".config"
+            | "secrets"
+            | "credentials"
+            | "private"
             | ".npmrc"
             | ".pypirc"
             | ".netrc"
             | "credentials.json"
             | "secrets.json"
             | "id_rsa"
+            | "id_ecdsa"
             | "id_ed25519"
     ) || lower == ".env"
         || lower.starts_with(".env.")
@@ -437,6 +452,15 @@ fn is_excluded_name(name: &str) -> bool {
         || lower.ends_with(".p12")
         || lower.ends_with(".pfx")
         || lower.ends_with(".kdbx")
+        || lower.ends_with(".p8")
+        || lower.ends_with(".p7b")
+        || lower.ends_with(".crt")
+        || lower.ends_with(".cer")
+        || lower.ends_with(".gpg")
+        || lower.ends_with(".asc")
+        || lower.ends_with(".age")
+        || lower.ends_with(".secret")
+        || lower.ends_with(".token")
         || lower.ends_with(".sqlite")
         || lower.ends_with(".sqlite3")
         || lower.ends_with(".db")
