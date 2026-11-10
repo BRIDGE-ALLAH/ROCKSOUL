@@ -6,7 +6,9 @@ on:
       - main
       - "feat/**"
       - "docs/**"
+      - "test/**"
     paths:
+      - ".github/workflows/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
@@ -19,6 +21,7 @@ on:
       - main
       - "docs/**"
     paths:
+      - ".github/workflows/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
@@ -66,10 +69,21 @@ jobs:
         run: bun run ui:check
       - name: Build UI
         run: bun run ui:build
+      - name: Verify embedded frontend output
+        shell: pwsh
+        run: |
+          $index = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/ui/dist/index.html"
+          if (-not (Test-Path -LiteralPath $index -PathType Leaf)) {
+            throw "Vite build did not produce apps/desktop/ui/dist/index.html; refusing to compile an empty native shell."
+          }
 
   desktop-windows:
-    name: Windows desktop compile check
-    runs-on: windows-latest
+    name: Windows desktop build and E2E smoke test
+    # windows-2025-vs2026 has a known WebView2/WebDriver regression:
+    # tauri-driver cannot create a DevToolsActivePort session. Pin the
+    # interactive Tauri E2E job to the verified windows-2022 image until
+    # that runner regression is resolved upstream.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.99.0
@@ -88,3 +102,47 @@ jobs:
         run: cargo check --workspace --all-targets
       - name: Build UI
         run: bun run ui:build
+      - name: Build native desktop executable for E2E
+        # E2E validates real Tauri + Rust IPC + SQLite behavior. Debug profile
+        # avoids the release profile's thin-LTO link cost without replacing
+        # the native application with a browser preview or mocked commands.
+        # Direct Cargo builds must enable custom-protocol to embed ui/dist;
+        # otherwise the binary tries to load the stopped Vite dev server.
+        run: cargo build -p rocksoul-desktop --features custom-protocol
+      - name: Prepare synthetic local workspace
+        shell: pwsh
+        run: |
+          $workspace = Join-Path $env:RUNNER_TEMP "rocksoul-e2e-workspace"
+          Remove-Item -LiteralPath $workspace -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path (Join-Path $workspace "src") | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $workspace "target") | Out-Null
+          Set-Content -LiteralPath (Join-Path $workspace "README.md") -Value "WORKSPACE_CONTENT_SENTINEL — this content must remain untouched." -NoNewline
+          Set-Content -LiteralPath (Join-Path $workspace "src/index.ts") -Value "SOURCE_CONTENT_SENTINEL" -NoNewline
+          Set-Content -LiteralPath (Join-Path $workspace ".gitignore") -Value "target/" -NoNewline
+          Set-Content -LiteralPath (Join-Path $workspace ".env") -Value "SECRET_VALUE_SENTINEL=must-not-enter-the-artifact" -NoNewline
+          Set-Content -LiteralPath (Join-Path $workspace "target/generated.txt") -Value "BUILD_OUTPUT_SENTINEL" -NoNewline
+          "ROCKSOUL_E2E_WORKSPACE=$workspace" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Set up Node.js for WebDriver
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install desktop E2E dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: apps/desktop/e2e
+      - name: Check WebDriver test syntax
+        run: |
+          node --check wdio.conf.mjs
+          node --check specs/local-mission.spec.mjs
+        working-directory: apps/desktop/e2e
+      - name: Run native Windows desktop E2E
+        run: npm test
+        working-directory: apps/desktop/e2e
+      - name: Upload desktop E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocksoul-windows-e2e-diagnostics
+          path: |
+            apps/desktop/e2e/test-results/
+            apps/desktop/e2e/logs/
+          if-no-files-found: ignore
