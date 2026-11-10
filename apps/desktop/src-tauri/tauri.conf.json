@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Rocksoul",
+  "version": "0.1.0",
+  "identifier": "com.rocksoul.desktop",
+  "build": {
+    "beforeDevCommand": "cd ../ui && bun run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "cd ../ui && bun run build",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "ROCKSOUL — AGILITY",
+        "width": 1440,
+        "height": 940,
+        "minWidth": 980,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:1420 ws://127.0.0.1:1420"
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}
