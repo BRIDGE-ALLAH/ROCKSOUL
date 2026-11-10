@@ -69,6 +69,13 @@ jobs:
         run: bun run ui:check
       - name: Build UI
         run: bun run ui:build
+      - name: Verify embedded frontend output
+        shell: pwsh
+        run: |
+          $index = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/ui/dist/index.html"
+          if (-not (Test-Path -LiteralPath $index -PathType Leaf)) {
+            throw "Vite build did not produce apps/desktop/ui/dist/index.html; refusing to compile an empty native shell."
+          }
 
   desktop-windows:
     name: Windows desktop build and E2E smoke test
