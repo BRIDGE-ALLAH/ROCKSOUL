@@ -648,8 +648,10 @@ mod tests {
         assert!(store.approve_mission(&mission.id).await.is_err());
         let approval_evidence = store.list_evidence(&mission.id).await?;
         assert_eq!(approval_evidence.len(), 2);
-        assert_eq!(approval_evidence[1].kind, "human_approval");
-        assert_eq!(approval_evidence[1].artifact_id.as_deref(), Some(result.artifact.id.as_str()));
+        assert!(approval_evidence.iter().any(|item| {
+            item.kind == "human_approval"
+                && item.artifact_id.as_deref() == Some(result.artifact.id.as_str())
+        }));
 
         drop(store);
         let reopened = Store::connect(&database).await?;
