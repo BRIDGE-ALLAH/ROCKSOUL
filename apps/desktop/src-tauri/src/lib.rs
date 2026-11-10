@@ -92,6 +92,18 @@ async fn list_evidence(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command(rename_all = "camelCase")]
+async fn approve_mission(
+    mission_id: String,
+    state: State<'_, AppState>,
+) -> Result<Mission, String> {
+    state
+        .store
+        .approve_mission(&mission_id)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -112,6 +124,7 @@ pub fn run() {
             list_missions,
             create_mission,
             inspect_workspace,
+            approve_mission,
             list_artifacts,
             list_evidence
         ])
