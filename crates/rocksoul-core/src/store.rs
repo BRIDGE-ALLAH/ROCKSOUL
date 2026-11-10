@@ -380,7 +380,8 @@ impl Store {
             mission_id: mission_id.to_string(),
             artifact_id: artifact_id.clone(),
             kind: "human_approval".to_string(),
-            summary: "User reviewed the local workspace inventory and approved this mission.".to_string(),
+            summary: "User reviewed the local workspace inventory and approved this mission."
+                .to_string(),
             source_path: None,
             details_json: json!({
                 "decision": "approved",
@@ -590,7 +591,9 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{collect_inventory, Store, MAX_INVENTORY_ENTRIES, MAX_INVENTORY_FILES, MAX_WARNINGS};
+    use super::collect_inventory;
+    use super::Store;
+    use super::{MAX_INVENTORY_ENTRIES, MAX_INVENTORY_FILES, MAX_WARNINGS};
 
     #[tokio::test]
     async fn project_mission_inventory_and_evidence_survive_reopen() -> Result<(), Box<dyn Error>> {
