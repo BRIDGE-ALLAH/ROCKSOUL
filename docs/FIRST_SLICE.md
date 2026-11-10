@@ -13,7 +13,8 @@ This slice connects a real local project to a durable mission, performs one boun
 5. **Sensitive-name exclusions** — common secrets/config files, build output, package directories, and local Rocksoul state are omitted.
 6. **Artifact creation** — the workspace inventory is stored as structured JSON and hashed with SHA-256.
 7. **Evidence receipt** — operation summary, scope, file count, limits, and no-content/no-write assertions are stored in the same database transaction as the artifact.
-8. **Human review and approval** — a successful inventory moves the mission to `review`. The user can inspect the artifact and receipts, then explicitly approve it. Approval is itself recorded as evidence and moves the mission to `completed`.
+8. **Single inventory invariant** — SQLite enforces at most one `workspace_inventory` artifact per mission, including when two native calls race.
+9. **Human review and approval** — a successful inventory moves the mission to `review`. The user can inspect the artifact and receipts, then explicitly approve it. Approval is itself recorded as evidence and moves the mission to `completed`.
 
 ## What the Scout does not do
 
