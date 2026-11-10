@@ -163,9 +163,11 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
       2,
       "The inventory receipt and human approval receipt must survive application restart",
     );
-    const kinds = await Promise.all(
-      receipts.map((receipt) => receipt.getAttribute("data-evidence-kind")),
+    const firstKind = await receipts[0].getAttribute("data-evidence-kind");
+    const secondKind = await receipts[1].getAttribute("data-evidence-kind");
+    assert.deepEqual(
+      new Set([firstKind, secondKind]),
+      new Set(["read_only_inventory", "human_approval"]),
     );
-    assert.deepEqual(new Set(kinds), new Set(["read_only_inventory", "human_approval"]));
   });
 });
