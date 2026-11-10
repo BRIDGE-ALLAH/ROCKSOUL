@@ -10,7 +10,7 @@ The first local-mission slice is merged to `main` via [PR #2](https://github.com
 
 **Implemented now:** one Tauri desktop shell, one React UI, local SQLite project/mission persistence, bounded metadata-only workspace inventory, SHA-256 artifact, atomic evidence receipt, and explicit human approval.
 
-**Still open in Phase 0:** rename/archive UX, FTS5/search, durable event ledger, backup/restore, structured crash-safe lifecycle, keyboard/accessibility review, interactive Windows launch/folder-picker smoke test, and packaging/clean-install checks. The first slice is build-verified, not a finished installer or a complete Phase 0 exit.
+**Next Phase 0 gate:** Windows native desktop E2E is being added to exercise launch, local project/mission creation, Scout, approval, full process restart, and SQLite restoration. The native OS folder-picker interaction still requires the manual check in [docs/WINDOWS_SMOKE_TEST.md](WINDOWS_SMOKE_TEST.md). Rename/archive UX, FTS5/search, durable event ledger, backup/restore, structured crash-safe lifecycle, keyboard/accessibility review, and packaging/clean-install checks also remain open. The first slice is build-verified, not a finished installer or a complete Phase 0 exit.
 
 **Phase 1 is not complete:** there is no provider adapter, no source-content/context compiler, no general tool registry, no mission cancellation/checkpoints, and no provider egress. Do not present the metadata Scout as a general-purpose autonomous agent.
 
