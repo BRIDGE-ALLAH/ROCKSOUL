@@ -459,7 +459,6 @@ fn collect_inventory(root: &Path) -> (Vec<InventoryFile>, bool, Vec<String>) {
     let mut files = Vec::new();
     let mut warnings = Vec::new();
     let mut truncated = false;
-    let mut entries_seen = 0usize;
 
     let mut builder = WalkBuilder::new(root);
     builder
@@ -471,12 +470,11 @@ fn collect_inventory(root: &Path) -> (Vec<InventoryFile>, bool, Vec<String>) {
         .max_depth(Some(MAX_WALK_DEPTH))
         .filter_entry(|entry| !is_excluded_name(&entry.file_name().to_string_lossy()));
 
-    for result in builder.build() {
+    for (entries_seen, result) in builder.build().enumerate() {
         if entries_seen >= MAX_INVENTORY_ENTRIES {
             truncated = true;
             break;
         }
-        entries_seen += 1;
 
         let entry = match result {
             Ok(entry) => entry,
