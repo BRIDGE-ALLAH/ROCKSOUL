@@ -375,3 +375,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .path-field { flex-direction: column; }
   .browse-button { min-height: 38px; }
 }
+
+.folder-field {
+  display: grid;
+  gap: 6px;
+}
+.folder-field > label {
+  display: block;
+  color: #b9b3aa;
+  font: 9px var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
