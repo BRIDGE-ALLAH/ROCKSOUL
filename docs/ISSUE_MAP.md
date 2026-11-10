@@ -199,6 +199,33 @@ The task issues carry the exact dependency edge list. The following are major ga
 - P7: asset catalog, explicit image/audio/video, simulation, skill-improvement proposal, opt-in human metrics, AGILITY benchmark (#84–#91).
 - OPS-01 (#93) defines per-platform support claims; OPS-02 (#94) defines dependency/SBOM/license/vulnerability release gates.
 
+## Scope boundary matrix — anti-overlap rules
+
+Use this matrix when dispatching parallel or sequential local agents. The left/right tasks are intentionally separate; do not combine them or implement a neighbor's acceptance criteria as incidental cleanup.
+
+| Boundary | Owning task A | Owning task B | Separation rule |
+|---|---|---|---|
+| Native app E2E vs shell dialog | [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5) | [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6) | #5 automates the Tauri app lifecycle through WebDriver using a valid path field; #6 manually accepts the real Windows shell picker select/cancel/invalid-path behavior. Do not duplicate picker automation in #5. |
+| Event model vs event writes vs timeline | [P0-F06 #10](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/10) | [P0-F07 #11](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/11) and [P0-F08 #12](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/12) | #10 owns schema/invariants; #11 owns lifecycle event emission and atomicity; #12 owns read-only presentation/query. |
+| Metadata search vs source-content search | [P0-F09 #13](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/13) | [P1-M07 #29](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/29) | #13 indexes project/mission metadata only; #29 indexes explicitly selected, bounded source text with source-scope and data-classification rules. |
+| First provider vs later provider vs routing | [P1-M14 #36](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/36) | [P6-D02 #78](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/78) and [P6-D03 #79](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/79) | #36 is the first real provider adapter; #78 is a distinct second adapter; #79 chooses among verified profiles. Never implement routing as part of either adapter issue. |
+| Completion gate vs evidence presentation | [P1-M19 #41](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/41) | [P3-A04 #59](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/59) | #41 enforces criterion evidence before mission completion in Rust; #59 displays the evidence-to-criterion mapping. UI presentation must not replace the backend gate. |
+| Process lifecycle vs OS isolation | [P2-A07 #49](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/49) | [P2-A14–A16 #102–#104](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/102) | #49 supervises process creation, timeout, cancellation, and descendants; #102 chooses the Windows security profile; #103 enforces OS restrictions; #104 proves the boundary with adversarial tests. A Job Object alone is not a filesystem/network sandbox. |
+| Patch proposal vs application vs recovery | [P2-A10 #52](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/52) | [P2-A11 #53](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/53) and [P2-A12 #54](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/54) | #52 creates immutable reviewable patch proposals; #53 applies an exactly approved digest with a durable journal; #54 recovers interrupted operations. |
+| Artifact bytes vs provenance vs export | [P3-A01 #56](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/56) | [P3-A03 #58](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/58) and [P3-A05 #60](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/60) | #56 owns immutable content-addressed versions; #58 owns the versioned provenance manifest; #60 packages and verifies an offline export. |
+| Design system vs reusable primitives vs navigation | [P0-F20 #95](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/95) | [P0-F21 #96](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/96) and [P0-F22 #97](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/97) | #95 defines tokens/visual language; #96 implements accessible primitives using those tokens; #97 assembles real workspace navigation from implemented capabilities. |
+| Image vs audio vs video | [P7-C02 #85](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/85) | [P7-C03 #86](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/86) and [P7-C04 #87](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/87) | Each issue owns one modality and its consent/provenance/data-limit contract. Do not bundle multiple media modalities into one provider adapter. |
+
+### Backlog audit snapshot
+
+As of 11 November 2026:
+- **100** child task issues exist (#5–#104); all are open.
+- All 100 task IDs are unique and present in this index.
+- Every issue contains all nine required authoring sections and between **5 and 9** acceptance checkboxes.
+- The backlog contains **577** explicit acceptance checkboxes in total.
+- Dependency references resolve to existing task issues; the checked issue dependency graph contains no cycles.
+- No task issue was added in this audit. The intent is to make boundaries more explicit, not grow the backlog by duplication.
+
 ## Issue authoring standard
 
 Every task issue retains:
