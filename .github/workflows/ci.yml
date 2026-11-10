@@ -69,7 +69,11 @@ jobs:
 
   desktop-windows:
     name: Windows desktop build and E2E smoke test
-    runs-on: windows-latest
+    # windows-2025-vs2026 has a known WebView2/WebDriver regression:
+    # tauri-driver cannot create a DevToolsActivePort session. Pin the
+    # interactive Tauri E2E job to the verified windows-2022 image until
+    # that runner regression is resolved upstream.
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.99.0
@@ -118,10 +122,12 @@ jobs:
       - name: Run native Windows desktop E2E
         run: npm test
         working-directory: apps/desktop/e2e
-      - name: Upload desktop E2E screenshots
+      - name: Upload desktop E2E diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: rocksoul-windows-e2e-diagnostics
-          path: apps/desktop/e2e/test-results/
+          path: |
+            apps/desktop/e2e/test-results/
+            apps/desktop/e2e/logs/
           if-no-files-found: ignore
