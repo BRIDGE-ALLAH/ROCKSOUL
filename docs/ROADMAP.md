@@ -4,6 +4,16 @@
 
 Roadmap ini berbasis capability gate, bukan tanggal marketing. Tiap fase harus punya demo yang bisa diulang dan acceptance criteria yang bisa diperiksa.
 
+## Current repository state — 2026-11-10
+
+The first local-mission slice is merged to `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Verified by [GitHub Actions run #42831777183](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42831777183): Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows desktop compilation all passed.
+
+**Implemented now:** one Tauri desktop shell, one React UI, local SQLite project/mission persistence, bounded metadata-only workspace inventory, SHA-256 artifact, atomic evidence receipt, and explicit human approval.
+
+**Still open in Phase 0:** rename/archive UX, FTS5/search, durable event ledger, backup/restore, structured crash-safe lifecycle, keyboard/accessibility review, interactive Windows launch/folder-picker smoke test, and packaging/clean-install checks. The first slice is build-verified, not a finished installer or a complete Phase 0 exit.
+
+**Phase 1 is not complete:** there is no provider adapter, no source-content/context compiler, no general tool registry, no mission cancellation/checkpoints, and no provider egress. Do not present the metadata Scout as a general-purpose autonomous agent.
+
 ## Phase 0 — FOUNDATION
 
 **Target:** repo, contracts, UI shell, durable local state.
