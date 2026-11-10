@@ -82,6 +82,7 @@ The first local-mission implementation has been merged into `main` via [PR #2](h
 - [Repository and ecosystem audit](docs/AUDIT.md)
 - [Wild idea lab](docs/IDEA_LAB.md)
 - [First local mission slice](docs/FIRST_SLICE.md)
+- [Windows desktop smoke test](docs/WINDOWS_SMOKE_TEST.md)
 - [Security posture](SECURITY.md)
 - [Roadmap and quality gates](docs/ROADMAP.md)
 
