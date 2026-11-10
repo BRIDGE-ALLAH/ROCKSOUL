@@ -244,6 +244,7 @@ mod tests {
     use std::{error::Error, fs};
 
     use serde_json::from_slice;
+    use sha2::{Digest, Sha256};
     use tempfile::tempdir;
 
     use super::{BackupManifest, Store};
@@ -279,7 +280,12 @@ mod tests {
         assert_eq!(backup.manifest.format_version, 1);
         assert!(backup.manifest.schema_version >= 1);
         assert_eq!(backup.manifest.integrity_result, "ok");
+        assert_eq!(backup.manifest.app_version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(backup.manifest.database_file, "database.sqlite3");
+        assert!(!backup.manifest.created_at.is_empty());
         assert_eq!(backup.manifest.sha256.len(), 64);
+        let expected_hash = format!("{:x}", Sha256::digest(fs::read(&backup.database_path)?));
+        assert_eq!(backup.manifest.sha256, expected_hash);
         assert_eq!(
             fs::metadata(&backup.database_path)?.len(),
             backup.manifest.database_bytes
@@ -287,6 +293,11 @@ mod tests {
 
         let manifest: BackupManifest = from_slice(&fs::read(&backup.manifest_path)?)?;
         assert_eq!(manifest, backup.manifest);
+        let bundle_entries = fs::read_dir(&backup.backup_directory)?
+            .map(|entry| entry.map(|entry| entry.file_name()))
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(bundle_entries.len(), 2, "only the database and manifest are finalized");
+        assert!(!bundle_entries.iter().any(|name| name.to_string_lossy().ends_with(".partial")));
 
         // Open the snapshot as a separate local store and prove that the
         // project and mission committed to the source WAL are in the snapshot.
@@ -299,6 +310,18 @@ mod tests {
         assert_eq!(missions[0].id, mission.id);
         assert_eq!(missions[0].title, "Verify online backup");
 
+        Ok(())
+    }
+
+    #[test]
+    fn abandoned_staging_directory_is_removed() -> Result<(), Box<dyn Error>> {
+        let temporary = tempdir()?;
+        let partial = temporary.path().join(".backup.partial");
+        fs::create_dir(&partial)?;
+        {
+            let _staging = super::StagingDirectory::new(partial.clone());
+        }
+        assert!(!partial.exists());
         Ok(())
     }
 
