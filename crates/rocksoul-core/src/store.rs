@@ -19,6 +19,7 @@ use uuid::Uuid;
 use crate::{Artifact, Evidence, InspectionResult, Mission, Project, StoreError};
 
 const MAX_INVENTORY_FILES: usize = 300;
+const MAX_INVENTORY_ENTRIES: usize = 2_000;
 const MAX_WALK_DEPTH: usize = 12;
 const MAX_WARNINGS: usize = 20;
 
@@ -244,6 +245,7 @@ impl Store {
             "warnings": warnings,
             "limits": {
                 "maxFiles": MAX_INVENTORY_FILES,
+                "maxEntries": MAX_INVENTORY_ENTRIES,
                 "maxDepth": MAX_WALK_DEPTH,
                 "maxWarnings": MAX_WARNINGS
             }
@@ -279,6 +281,7 @@ impl Store {
                 "fileCount": files.len(),
                 "truncated": truncated,
                 "maxFiles": MAX_INVENTORY_FILES,
+                "maxEntries": MAX_INVENTORY_ENTRIES,
                 "maxDepth": MAX_WALK_DEPTH,
                 "readFileContents": false,
                 "modifiedWorkspace": false
@@ -331,6 +334,7 @@ impl Store {
             truncated,
         })
     }
+
     /// Records a human review decision. A mission can only be approved after
     /// a successful inventory created both an artifact and an evidence receipt.
     pub async fn approve_mission(&self, mission_id: &str) -> Result<Mission, StoreError> {
@@ -429,7 +433,6 @@ impl Store {
         .fetch_one(&self.pool)
         .await?)
     }
-
 }
 
 fn validate_text(field: &str, value: &str, max_chars: usize) -> Result<String, StoreError> {
@@ -453,6 +456,7 @@ fn collect_inventory(root: &Path) -> (Vec<InventoryFile>, bool, Vec<String>) {
     let mut files = Vec::new();
     let mut warnings = Vec::new();
     let mut truncated = false;
+    let mut entries_seen = 0usize;
 
     let mut builder = WalkBuilder::new(root);
     builder
@@ -465,6 +469,12 @@ fn collect_inventory(root: &Path) -> (Vec<InventoryFile>, bool, Vec<String>) {
         .filter_entry(|entry| !is_excluded_name(&entry.file_name().to_string_lossy()));
 
     for result in builder.build() {
+        if entries_seen >= MAX_INVENTORY_ENTRIES {
+            truncated = true;
+            break;
+        }
+        entries_seen += 1;
+
         let entry = match result {
             Ok(entry) => entry,
             Err(error) => {
@@ -608,6 +618,7 @@ mod tests {
             )
             .await?;
 
+        assert!(store.approve_mission(&mission.id).await.is_err());
         let result = store.inspect_workspace(&project.id, &mission.id).await?;
         assert_eq!(result.file_count, 3);
         assert_eq!(result.artifact.sha256.len(), 64);
