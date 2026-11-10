@@ -8,7 +8,7 @@ const repositoryRoot = path.resolve(here, "../../..");
 const appBinaryPath = path.join(
   repositoryRoot,
   "target",
-  "release",
+  "debug",
   "rocksoul-desktop.exe",
 );
 const testResults = path.join(here, "test-results");
