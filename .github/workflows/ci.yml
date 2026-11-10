@@ -6,6 +6,7 @@ on:
       - main
       - "feat/**"
       - "docs/**"
+      - "test/**"
     paths:
       - ".github/workflows/**"
       - "Cargo.toml"
