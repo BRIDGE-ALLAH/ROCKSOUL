@@ -237,7 +237,7 @@ impl Store {
             "mission": mission.title,
             "objective": mission.objective,
             "root": root.to_string_lossy(),
-            "mode": "read-only metadata inventory; source/document/binary contents were not opened; Git ignore rules were read",
+            "mode": "read-only metadata inventory; source/document/binary contents were not opened; ignore rules were read",
             "fileCount": files.len(),
             "truncated": truncated,
             "extensions": extensions,
@@ -283,8 +283,8 @@ impl Store {
                 "maxFiles": MAX_INVENTORY_FILES,
                 "maxEntries": MAX_INVENTORY_ENTRIES,
                 "maxDepth": MAX_WALK_DEPTH,
-                "readProjectFileContents": false,
-                "readGitIgnoreRules": true,
+                "readSourceOrDocumentContents": false,
+                "readIgnoreRules": true,
                 "modifiedWorkspace": false
             })
             .to_string(),
