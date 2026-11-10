@@ -340,7 +340,7 @@ export default function App() {
           ROCK<span>SOUL</span><i>®</i>
         </a>
         <div className="topline">CREATIVE INTELLIGENCE / LOCAL FIRST</div>
-        <div className={vaultState === "ready" ? "status-chip online" : vaultState === "error" ? "status-chip error-state" : "status-chip"}>
+        <div data-testid="vault-status" className={vaultState === "ready" ? "status-chip online" : vaultState === "error" ? "status-chip error-state" : "status-chip"}>
           <span className="status-dot" />
           {vaultState === "ready"
             ? "LOCAL VAULT"
@@ -374,7 +374,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="status-line" role="status">
+      <div className="status-line" role="status" data-testid="status-line">
         <span className="status-icon">↳</span>
         {notice}
       </div>
@@ -392,6 +392,7 @@ export default function App() {
             <label>
               Project name
               <input
+                data-testid="project-name"
                 value={projectName}
                 onChange={(event) => setProjectName(event.target.value)}
                 maxLength={80}
@@ -404,6 +405,7 @@ export default function App() {
               <div className="path-field">
                 <input
                   id="project-root-path"
+                  data-testid="project-root-path"
                   value={rootPath}
                   onChange={(event) => setRootPath(event.target.value)}
                   placeholder="Choose a local folder..."
@@ -413,6 +415,7 @@ export default function App() {
                   className="browse-button"
                   type="button"
                   aria-label="Browse for an existing project folder"
+                  data-testid="browse-folder"
                   onClick={() => void handleBrowseFolder()}
                   disabled={busy || !inDesktop}
                 >
@@ -420,7 +423,7 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <button className="button button-lime" type="submit" disabled={busy || !inDesktop}>
+            <button className="button button-lime" type="submit" data-testid="create-project" disabled={busy || !inDesktop}>
               LINK PROJECT <span>↗</span>
             </button>
           </form>
@@ -430,6 +433,8 @@ export default function App() {
             {projects.map((project) => (
               <button
                 className={project.id === projectId ? "project-item active" : "project-item"}
+                data-testid="project-item"
+                data-project-name={project.name}
                 key={project.id}
                 onClick={() => void handleSelectProject(project.id)}
                 type="button"
@@ -464,6 +469,7 @@ export default function App() {
                 <label>
                   Mission title
                   <input
+                    data-testid="mission-title"
                     value={missionTitle}
                     onChange={(event) => setMissionTitle(event.target.value)}
                     maxLength={120}
@@ -474,6 +480,7 @@ export default function App() {
                 <label>
                   Objective
                   <textarea
+                    data-testid="mission-objective"
                     value={objective}
                     onChange={(event) => setObjective(event.target.value)}
                     maxLength={2000}
@@ -485,6 +492,7 @@ export default function App() {
                 <button
                   className="button button-pink"
                   type="submit"
+                  data-testid="create-mission"
                   disabled={busy || !inDesktop}
                 >
                   DRAFT MISSION <span>↗</span>
@@ -495,6 +503,8 @@ export default function App() {
                 {missions.map((mission) => (
                   <button
                     className={mission.id === missionId ? "mission-item active" : "mission-item"}
+                    data-testid="mission-item"
+                    data-mission-title={mission.title}
                     key={mission.id}
                     onClick={() => void handleSelectMission(mission.id)}
                     type="button"
@@ -544,6 +554,7 @@ export default function App() {
           <button
             className="button button-ink"
             type="button"
+            data-testid="run-sound-check"
             onClick={() => void handleInspect()}
             disabled={busy || !selectedMission || !inDesktop || selectedMission.status === "review" || selectedMission.status === "completed"}
           >
@@ -556,6 +567,7 @@ export default function App() {
               <button
                 className="button button-lime"
                 type="button"
+                data-testid="approve-mission"
                 onClick={() => void handleApproveMission()}
                 disabled={busy || !inDesktop}
               >
@@ -586,7 +598,7 @@ export default function App() {
                 <strong>{latestArtifact.title}</strong>
                 <span>{formatDate(latestArtifact.createdAt)}</span>
               </div>
-              <pre className="artifact-preview">{latestArtifact.content}</pre>
+              <pre className="artifact-preview" data-testid="artifact-preview">{latestArtifact.content}</pre>
               <div className="hash-line">
                 SHA-256 <code>{latestArtifact.sha256}</code>
               </div>
@@ -605,7 +617,7 @@ export default function App() {
           {evidence.length > 0 ? (
             <div className="evidence-list">
               {evidence.map((item) => (
-                <article className="evidence-item" key={item.id}>
+                <article className="evidence-item" data-testid="evidence-item" data-evidence-kind={item.kind} key={item.id}>
                   <div className="evidence-kind">{item.kind.replaceAll("_", " ")}</div>
                   <p>{item.summary}</p>
                   <small>{formatDate(item.createdAt)}</small>
