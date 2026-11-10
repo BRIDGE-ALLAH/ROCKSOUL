@@ -71,7 +71,7 @@ No open-source license has been selected yet. Until the project owner publishes 
 
 ## Where we are
 
-The first local-mission implementation has been merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2): native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and an explicit human approval gate. [GitHub Actions run #42831777183](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42831777183) passed Rust formatting, all 5 core tests, Clippy, the UI typecheck/production build, and the Windows desktop compile check. It remains **prototype code, not a release-ready installer**; an interactive Windows desktop smoke test, backup/restore, signing, updates, and clean-machine installation checks are still release gates. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+The first local-mission implementation has been merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2): native folder selection, persistent projects/missions, a bounded metadata-only Workspace Scout, a local artifact with SHA-256 evidence, and an explicit human approval gate. [GitHub Actions run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, all 5 core tests, Clippy, the UI typecheck/production build, and the Windows desktop compile check. It remains **prototype code, not a release-ready installer**; an interactive Windows desktop smoke test, backup/restore, signing, updates, and clean-machine installation checks are still release gates. See [docs/FIRST_SLICE.md](docs/FIRST_SLICE.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Start here
 

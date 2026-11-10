@@ -6,7 +6,7 @@ Roadmap ini berbasis capability gate, bukan tanggal marketing. Tiap fase harus p
 
 ## Current repository state — 2026-11-10
 
-The first local-mission slice is merged to `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Verified by [GitHub Actions run #42831777183](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42831777183): Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows desktop compilation all passed.
+The first local-mission slice is merged to `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Verified by [GitHub Actions run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466): Rust formatting, 5 core tests, Clippy, UI typecheck/production build, and Windows desktop compilation all passed.
 
 **Implemented now:** one Tauri desktop shell, one React UI, local SQLite project/mission persistence, bounded metadata-only workspace inventory, SHA-256 artifact, atomic evidence receipt, and explicit human approval.
 
