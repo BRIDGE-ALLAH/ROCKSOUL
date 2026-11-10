@@ -2,6 +2,7 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { browser } from "@wdio/globals";
+import WebDriverCommandProbe from "./api-probe-service.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(here, "../../..");
@@ -27,6 +28,7 @@ export const config = {
     },
   ],
   services: [
+    [WebDriverCommandProbe, {}],
     [
       "@wdio/tauri-service",
       {
