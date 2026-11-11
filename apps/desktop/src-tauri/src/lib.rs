@@ -16,6 +16,39 @@ async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, Strin
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn list_archived_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
+    state
+        .store
+        .list_archived_projects()
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
+async fn archive_project(
+    project_id: String,
+    state: State<'_, AppState>,
+) -> Result<Project, String> {
+    state
+        .store
+        .archive_project(&project_id)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
+async fn unarchive_project(
+    project_id: String,
+    state: State<'_, AppState>,
+) -> Result<Project, String> {
+    state
+        .store
+        .unarchive_project(&project_id)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 #[tauri::command(rename_all = "camelCase")]
 async fn create_project(
     name: String,
@@ -120,6 +153,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             list_projects,
+            list_archived_projects,
+            archive_project,
+            unarchive_project,
             create_project,
             list_missions,
             create_mission,

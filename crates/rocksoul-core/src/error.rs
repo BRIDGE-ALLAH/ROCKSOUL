@@ -8,6 +8,9 @@ pub enum StoreError {
     #[error("The requested project or mission was not found.")]
     NotFound,
 
+    #[error("This project is archived. Restore it before starting or running a mission.")]
+    ProjectArchived,
+
     #[error("The selected project directory is not available: {0}")]
     ProjectDirectory(String),
 

@@ -225,6 +225,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   padding-bottom: 8px;
 }
 .project-list, .mission-list, .evidence-list { display: grid; gap: 6px; }
+.project-row { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
+.project-row > .project-item { flex: 1; min-width: 0; }
+.project-archive-summary { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 9px 7px; border: 1px solid #38363c; background: rgba(255,255,255,.02); color: var(--paper); }
+.project-action { flex: 0 0 auto; align-self: stretch; padding: 0 9px; border: 1px solid #4b4850; color: #b8b2bc; background: transparent; font: 8px var(--mono); letter-spacing: .04em; }
+.project-action:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+.project-action.restore { color: var(--lime); border-color: rgba(216,255,53,.35); }
+.project-action:disabled { opacity: .45; }
 .project-item, .mission-item {
   display: flex;
   align-items: center;

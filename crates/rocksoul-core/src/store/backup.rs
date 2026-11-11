@@ -295,7 +295,12 @@ mod tests {
         assert!(backup.database_path.is_file());
         assert!(backup.manifest_path.is_file());
         assert_eq!(backup.manifest.format_version, 1);
-        assert_eq!(backup.manifest.schema_version, 2);
+        let expected_schema_version: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(MAX(version), 0) FROM _sqlx_migrations WHERE success = 1",
+        )
+        .fetch_one(&store.pool)
+        .await?;
+        assert_eq!(backup.manifest.schema_version, expected_schema_version);
         assert_eq!(backup.manifest.integrity_result, "ok");
         assert_eq!(backup.manifest.app_version, env!("CARGO_PKG_VERSION"));
         assert_eq!(backup.manifest.database_file, "database.sqlite3");

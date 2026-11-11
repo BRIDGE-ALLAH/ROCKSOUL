@@ -66,10 +66,87 @@ impl Store {
 
     pub async fn list_projects(&self) -> Result<Vec<Project>, StoreError> {
         Ok(sqlx::query_as::<_, Project>(
-            "SELECT id, name, root_path, created_at, updated_at FROM projects ORDER BY updated_at DESC",
+            "SELECT id, name, root_path, created_at, updated_at, archived_at
+             FROM projects WHERE archived_at IS NULL ORDER BY updated_at DESC",
         )
         .fetch_all(&self.pool)
         .await?)
+    }
+
+    pub async fn list_archived_projects(&self) -> Result<Vec<Project>, StoreError> {
+        Ok(sqlx::query_as::<_, Project>(
+            "SELECT id, name, root_path, created_at, updated_at, archived_at
+             FROM projects WHERE archived_at IS NOT NULL ORDER BY archived_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
+    /// Archive only the Rocksoul project record. The canonical workspace and
+    /// all mission, artifact, and evidence rows remain untouched.
+    pub async fn archive_project(&self, project_id: &str) -> Result<Project, StoreError> {
+        let timestamp = now();
+        let mut transaction = self.pool.begin().await?;
+        let changed = sqlx::query(
+            "UPDATE projects
+             SET archived_at = COALESCE(archived_at, ?),
+                 updated_at = CASE WHEN archived_at IS NULL THEN ? ELSE updated_at END
+             WHERE id = ?",
+        )
+        .bind(&timestamp)
+        .bind(&timestamp)
+        .bind(project_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+
+        if changed != 1 {
+            transaction.rollback().await?;
+            return Err(StoreError::NotFound);
+        }
+
+        let project = sqlx::query_as::<_, Project>(
+            "SELECT id, name, root_path, created_at, updated_at, archived_at
+             FROM projects WHERE id = ?",
+        )
+        .bind(project_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(project)
+    }
+
+    /// Restore an archived project without changing its identity or history.
+    /// Repeated restore calls are idempotent.
+    pub async fn unarchive_project(&self, project_id: &str) -> Result<Project, StoreError> {
+        let timestamp = now();
+        let mut transaction = self.pool.begin().await?;
+        let changed = sqlx::query(
+            "UPDATE projects
+             SET updated_at = CASE WHEN archived_at IS NOT NULL THEN ? ELSE updated_at END,
+                 archived_at = NULL
+             WHERE id = ?",
+        )
+        .bind(&timestamp)
+        .bind(project_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+
+        if changed != 1 {
+            transaction.rollback().await?;
+            return Err(StoreError::NotFound);
+        }
+
+        let project = sqlx::query_as::<_, Project>(
+            "SELECT id, name, root_path, created_at, updated_at, archived_at
+             FROM projects WHERE id = ?",
+        )
+        .bind(project_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(project)
     }
 
     pub async fn create_project(&self, name: &str, root_path: &str) -> Result<Project, StoreError> {
@@ -92,6 +169,7 @@ impl Store {
             root_path: canonical_root.to_string_lossy().into_owned(),
             created_at: timestamp.clone(),
             updated_at: timestamp,
+            archived_at: None,
         };
 
         sqlx::query(
@@ -126,13 +204,15 @@ impl Store {
         let title = validate_text("Mission title", title, 120)?;
         let objective = validate_text("Mission objective", objective, 2_000)?;
 
-        let project_exists: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM projects WHERE id = ?")
-            .bind(project_id)
-            .fetch_one(&self.pool)
-            .await?;
+        let archived_at: Option<String> =
+            sqlx::query_scalar("SELECT archived_at FROM projects WHERE id = ?")
+                .bind(project_id)
+                .fetch_optional(&self.pool)
+                .await?
+                .ok_or(StoreError::NotFound)?;
 
-        if project_exists == 0 {
-            return Err(StoreError::NotFound);
+        if archived_at.is_some() {
+            return Err(StoreError::ProjectArchived);
         }
 
         let timestamp = now();
@@ -189,12 +269,16 @@ impl Store {
         mission_id: &str,
     ) -> Result<InspectionResult, StoreError> {
         let project = sqlx::query_as::<_, Project>(
-            "SELECT id, name, root_path, created_at, updated_at FROM projects WHERE id = ?",
+            "SELECT id, name, root_path, created_at, updated_at, archived_at FROM projects WHERE id = ?",
         )
         .bind(project_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(StoreError::NotFound)?;
+
+        if project.archived_at.is_some() {
+            return Err(StoreError::ProjectArchived);
+        }
 
         let mission = sqlx::query_as::<_, Mission>(
             "SELECT id, project_id, title, objective, status, created_at, updated_at FROM missions WHERE id = ? AND project_id = ?",
@@ -737,6 +821,120 @@ mod tests {
                 .create_project("  ", workspace.to_str().unwrap_or_default())
                 .await
                 .is_err()
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn archive_preserves_history_blocks_new_missions_and_survives_reopen()
+    -> Result<(), Box<dyn Error>> {
+        use crate::StoreError;
+
+        let temporary = tempdir()?;
+        let workspace = temporary.path().join("workspace");
+        fs::create_dir_all(&workspace)?;
+        fs::write(workspace.join("README.md"), "keep this workspace unchanged")?;
+        let database = temporary.path().join("rocksoul.sqlite3");
+        let store = Store::connect(&database).await?;
+
+        let project = store
+            .create_project("Archive me", workspace.to_str().unwrap_or_default())
+            .await?;
+        let completed_mission = store
+            .create_mission(
+                &project.id,
+                "Completed mission",
+                "Preserve completed mission history.",
+            )
+            .await?;
+        store
+            .inspect_workspace(&project.id, &completed_mission.id)
+            .await?;
+        store.approve_mission(&completed_mission.id).await?;
+
+        let pending_mission = store
+            .create_mission(
+                &project.id,
+                "Pending mission",
+                "Keep this draft while the project is archived.",
+            )
+            .await?;
+
+        let archived = store.archive_project(&project.id).await?;
+        let archived_at = archived.archived_at.clone().expect("archive timestamp");
+        assert_eq!(archived.id, project.id);
+        assert_eq!(archived.root_path, project.root_path);
+        assert!(store.list_projects().await?.is_empty());
+        let archived_projects = store.list_archived_projects().await?;
+        assert_eq!(archived_projects.len(), 1);
+        assert_eq!(archived_projects[0].id, project.id);
+
+        let archived_again = store.archive_project(&project.id).await?;
+        assert_eq!(
+            archived_again.archived_at.as_deref(),
+            Some(archived_at.as_str())
+        );
+        assert_eq!(store.list_archived_projects().await?.len(), 1);
+
+        assert!(matches!(
+            store
+                .create_mission(&project.id, "Blocked", "Must not be created.")
+                .await,
+            Err(StoreError::ProjectArchived)
+        ));
+        assert!(matches!(
+            store
+                .inspect_workspace(&project.id, &pending_mission.id)
+                .await,
+            Err(StoreError::ProjectArchived)
+        ));
+
+        let missions = store.list_missions(&project.id).await?;
+        assert_eq!(missions.len(), 2);
+        assert_eq!(
+            missions
+                .iter()
+                .find(|m| m.id == completed_mission.id)
+                .unwrap()
+                .status,
+            "completed"
+        );
+        assert_eq!(store.list_artifacts(&completed_mission.id).await?.len(), 1);
+        assert_eq!(store.list_evidence(&completed_mission.id).await?.len(), 2);
+        assert_eq!(
+            fs::read_to_string(workspace.join("README.md"))?,
+            "keep this workspace unchanged"
+        );
+
+        drop(store);
+        let reopened = Store::connect(&database).await?;
+        assert!(reopened.list_projects().await?.is_empty());
+        assert_eq!(reopened.list_archived_projects().await?.len(), 1);
+        assert_eq!(reopened.list_missions(&project.id).await?.len(), 2);
+        assert_eq!(
+            reopened.list_artifacts(&completed_mission.id).await?.len(),
+            1
+        );
+        assert_eq!(
+            reopened.list_evidence(&completed_mission.id).await?.len(),
+            2
+        );
+
+        let restored = reopened.unarchive_project(&project.id).await?;
+        assert!(restored.archived_at.is_none());
+        assert_eq!(restored.id, project.id);
+        assert_eq!(restored.root_path, project.root_path);
+        let active_projects = reopened.list_projects().await?;
+        assert_eq!(active_projects.len(), 1);
+        assert_eq!(active_projects[0].id, project.id);
+        assert!(reopened.list_archived_projects().await?.is_empty());
+
+        let restored_again = reopened.unarchive_project(&project.id).await?;
+        assert!(restored_again.archived_at.is_none());
+        assert_eq!(reopened.list_projects().await?.len(), 1);
+        assert_eq!(
+            fs::read_to_string(workspace.join("README.md"))?,
+            "keep this workspace unchanged"
         );
         Ok(())
     }
