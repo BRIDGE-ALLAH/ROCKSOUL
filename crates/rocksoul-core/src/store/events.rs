@@ -270,8 +270,9 @@ fn validate_payload_node(value: &Value, depth: usize) -> Result<(), StoreError> 
                     "documenttext",
                     "rawcontent",
                     "rawtext",
-                    "source",
-                    "content",
+                    "filecontent",
+                    "filecontents",
+                    "documentbody",
                 ];
                 if sensitive.iter().any(|needle| normalized.contains(needle)) {
                     return Err(StoreError::InvalidEventPayload(format!(
@@ -301,6 +302,62 @@ fn validate_payload_node(value: &Value, depth: usize) -> Result<(), StoreError> 
     Ok(())
 }
 
+fn validate_event_payload(event_type: EventType, payload: &Value) -> Result<(), StoreError> {
+    let object = payload.as_object().ok_or_else(|| {
+        StoreError::InvalidEventPayload(
+            "event payload must be a JSON object containing metadata only".into(),
+        )
+    })?;
+
+    for (field, value) in object {
+        let valid = match (event_type, field.as_str()) {
+            (EventType::ProjectCreated, "name_length")
+            | (EventType::ProjectRenamed, "old_name_length")
+            | (EventType::ProjectRenamed, "new_name_length")
+            | (EventType::MissionCreated, "title_length")
+            | (EventType::MissionCreated, "objective_length")
+            | (EventType::MissionDraftUpdated, "title_length")
+            | (EventType::MissionDraftUpdated, "objective_length")
+            | (EventType::MissionInspected, "file_count")
+            | (EventType::MissionInspected, "warning_count")
+            | (EventType::BackupCreated, "backup_size_bytes")
+            | (EventType::BackupCreated, "schema_version") => value.as_u64().is_some(),
+            (EventType::ProjectArchived, "reason_code")
+            | (EventType::ProjectRestored, "reason_code") => value
+                .as_str()
+                .is_some_and(|text| {
+                    !text.is_empty()
+                        && text.len() <= 32
+                        && text
+                            .chars()
+                            .all(|character| character.is_ascii_lowercase()
+                                || character.is_ascii_digit()
+                                || matches!(character, '.' | '_' | '-'))
+                }),
+            (EventType::MissionInspected, "truncated")
+            | (EventType::MissionApproved, "approved") => value.is_boolean(),
+            (EventType::MissionInspected, "artifact_sha256")
+            | (EventType::BackupCreated, "backup_sha256") => value
+                .as_str()
+                .is_some_and(|hash| {
+                    hash.len() == 64
+                        && hash
+                            .bytes()
+                            .all(|byte| byte.is_ascii_hexdigit())
+                }),
+            _ => false,
+        };
+
+        if !valid {
+            return Err(StoreError::InvalidEventPayload(format!(
+                "field {field:?} is not an approved metadata field for event type {}",
+                event_type.as_str()
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn validate_draft(draft: &EventDraft) -> Result<String, StoreError> {
     if draft.schema_version != CURRENT_EVENT_SCHEMA_VERSION {
         return Err(StoreError::UnsupportedEventSchema(draft.schema_version));
@@ -323,6 +380,7 @@ fn validate_draft(draft: &EventDraft) -> Result<String, StoreError> {
             "event payload must be a JSON object containing metadata only".into(),
         ));
     }
+    validate_event_payload(draft.event_type, &draft.payload)?;
     validate_payload_node(&draft.payload, 0)?;
     let serialized = serde_json::to_string(&draft.payload)
         .map_err(|error| StoreError::InvalidEventPayload(error.to_string()))?;
@@ -423,7 +481,6 @@ impl Store {
 mod tests {
     use super::*;
     use serde_json::json;
-    use sqlx::sqlite::SqlitePoolOptions;
     use tempfile::tempdir;
 
     fn event(subject_id: &str) -> EventDraft {
@@ -431,7 +488,7 @@ mod tests {
             EventType::MissionCreated,
             EventSubjectType::Mission,
             subject_id,
-            json!({"title":"A bounded mission", "source_count": 2}),
+            json!({"title_length": 18, "objective_length": 42}),
         )
         .with_actor(EventActorType::User, "local-user")
         .with_correlation_id("mission-run-1")
@@ -508,6 +565,20 @@ mod tests {
             Err(StoreError::InvalidEventPayload(_))
         ));
 
+        let mut unapproved_metadata = event("mission-1");
+        unapproved_metadata.payload = json!({"source_count": 12});
+        assert!(matches!(
+            store.append_event(unapproved_metadata).await,
+            Err(StoreError::InvalidEventPayload(_))
+        ));
+
+        let mut text_in_numeric_field = event("mission-1");
+        text_in_numeric_field.payload = json!({"title_length":"private text"});
+        assert!(matches!(
+            store.append_event(text_in_numeric_field).await,
+            Err(StoreError::InvalidEventPayload(_))
+        ));
+
         let mut oversized = event("mission-1");
         oversized.payload = json!({"metadata":"x".repeat(MAX_EVENT_PAYLOAD_BYTES)});
         assert!(matches!(
@@ -551,7 +622,7 @@ mod tests {
                 EventType::MissionApproved,
                 EventSubjectType::Mission,
                 "mission-1",
-                json!({"approval":"human"}),
+                json!({"approved": true}),
             ))
             .await?;
 
