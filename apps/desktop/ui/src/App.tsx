@@ -67,6 +67,8 @@ export default function App() {
   const [missionId, setMissionId] = useState("");
   const [projectName, setProjectName] = useState("");
   const [rootPath, setRootPath] = useState("");
+  const [editingProjectId, setEditingProjectId] = useState("");
+  const [editProjectName, setEditProjectName] = useState("");
   const [missionTitle, setMissionTitle] = useState("Map this workspace");
   const [objective, setObjective] = useState(
     "Create a safe, read-only inventory of this project's structure.",
@@ -240,6 +242,41 @@ export default function App() {
       setRootPath("");
       await refreshProjects(project.id);
       setNotice(`Project linked: ${project.name}. No workspace files were changed.`);
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleStartRename(project: Project) {
+    if (busy || !inDesktop) return;
+    setError("");
+    setEditingProjectId(project.id);
+    setEditProjectName(project.name);
+  }
+
+  function handleCancelRename() {
+    setEditingProjectId("");
+    setEditProjectName("");
+    setError("");
+  }
+
+  async function handleRenameProject(event: FormEvent<HTMLFormElement>, project: Project) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      desktopOnly();
+      const renamed = await invoke<Project>("rename_project", {
+        projectId: project.id,
+        name: editProjectName,
+      });
+      setEditingProjectId("");
+      setEditProjectName("");
+      await refreshProjects(renamed.id);
+      setNotice(`Project renamed: ${renamed.name}. The folder and mission history are unchanged.`);
     } catch (cause) {
       setError(String(cause));
     } finally {
@@ -431,21 +468,58 @@ export default function App() {
           <div className="list-label">IN THE ROOM / {projects.length}</div>
           <div className="project-list">
             {projects.map((project) => (
-              <button
-                className={project.id === projectId ? "project-item active" : "project-item"}
-                data-testid="project-item"
-                data-project-name={project.name}
-                key={project.id}
-                onClick={() => void handleSelectProject(project.id)}
-                type="button"
-              >
-                <span className="project-glyph">▧</span>
-                <span className="project-name">
-                  {project.name}
-                  <small>{project.rootPath}</small>
-                </span>
-                <span className="project-arrow">↗</span>
-              </button>
+              <div className="project-row" key={project.id} data-testid="project-row">
+                {editingProjectId === project.id ? (
+                  <form
+                    className="project-rename-form"
+                    data-testid="rename-project-form"
+                    onSubmit={(event) => void handleRenameProject(event, project)}
+                  >
+                    <input
+                      aria-label={`New name for ${project.name}`}
+                      data-testid="project-rename-input"
+                      value={editProjectName}
+                      onChange={(event) => setEditProjectName(event.target.value)}
+                      maxLength={80}
+                      autoFocus
+                      required
+                    />
+                    <button className="project-action save" type="submit" data-testid="save-project-rename" disabled={busy || !inDesktop}>
+                      SAVE
+                    </button>
+                    <button className="project-action" type="button" data-testid="cancel-project-rename" onClick={handleCancelRename} disabled={busy}>
+                      CANCEL
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      className={project.id === projectId ? "project-item active" : "project-item"}
+                      data-testid="project-item"
+                      data-project-name={project.name}
+                      onClick={() => void handleSelectProject(project.id)}
+                      type="button"
+                    >
+                      <span className="project-glyph">▧</span>
+                      <span className="project-name">
+                        {project.name}
+                        <small>{project.rootPath}</small>
+                      </span>
+                      <span className="project-arrow">↗</span>
+                    </button>
+                    <button
+                      className="project-action"
+                      type="button"
+                      data-testid="rename-project"
+                      aria-label={`Rename ${project.name}`}
+                      onClick={() => handleStartRename(project)}
+                      disabled={busy || !inDesktop}
+                    >
+                      RENAME
+                    </button>
+                  </>
+                )}
+              </div>
             ))}
             {projects.length === 0 && (
               <p className="empty-note">No projects yet. Pick a folder and bring it in.</p>
