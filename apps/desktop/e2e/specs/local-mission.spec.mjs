@@ -24,6 +24,29 @@ async function waitFor(selector, description, timeout = 30_000) {
   );
 }
 
+async function focusSelector(selector) {
+  const focused = await browser.execute((target) => {
+    const element = document.querySelector(target);
+    if (!(element instanceof HTMLElement)) return false;
+    element.focus();
+    return document.activeElement === element;
+  }, selector);
+  assert.equal(focused, true, `Could not focus ${selector}`);
+}
+
+async function activeFocus() {
+  return browser.execute(() => ({
+    testId: document.activeElement?.getAttribute("data-testid") ?? null,
+    id: document.activeElement?.id ?? null,
+  }));
+}
+
+async function tabTo(testIdValue) {
+  await browser.keys("\uE004");
+  const focus = await activeFocus();
+  assert.equal(focus.testId, testIdValue, `Unexpected tab order before ${testIdValue}`);
+}
+
 async function waitForStatus(fragment) {
   await browser.waitUntil(
     async () => {
@@ -63,26 +86,45 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
     assert.equal(await browseButton.isDisplayed(), true);
     assert.equal(await browseButton.isEnabled(), true);
 
-    await $(testId("project-name")).setValue(projectName);
-    await $(testId("project-root-path")).setValue(workspace);
-    await $(testId("create-project")).click();
+    await focusSelector(testId("project-name"));
+    await browser.keys(projectName);
+    await tabTo("project-root-path");
+    await browser.keys(workspace);
+    await tabTo("browse-folder");
+    await tabTo("create-project");
+    await browser.keys("\uE007");
     await waitForStatus(`Project linked: ${projectName}`);
 
     const projectSelector =
       `${testId("project-item")}[data-project-name="${projectName}"]`;
     await waitFor(projectSelector, "new local project");
 
-    await $(testId("mission-title")).setValue(missionTitle);
-    await $(testId("mission-objective")).setValue(
+    await focusSelector(testId("mission-title"));
+    // The form intentionally starts with a suggested title. Replace it using
+    // keyboard input rather than appending to the existing value.
+    await browser.keys("\uE009a");
+    await browser.keys("\uE017");
+    await browser.keys(missionTitle);
+    const enteredMissionTitle = await browser.execute(() => {
+      const field = document.querySelector('[data-testid="mission-title"]');
+      return field instanceof HTMLInputElement ? field.value : null;
+    });
+    assert.equal(enteredMissionTitle, missionTitle);
+    await tabTo("mission-objective");
+    await browser.keys("\uE009a");
+    await browser.keys("\uE017");
+    await browser.keys(
       "Inventory metadata only, preserve the workspace, and prove that approval survives an application restart.",
     );
-    await $(testId("create-mission")).click();
+    await tabTo("create-mission");
+    await browser.keys("\uE007");
 
     const missionSelector =
       `${testId("mission-item")}[data-mission-title="${missionTitle}"]`;
     await waitFor(missionSelector, "new mission draft");
 
-    await $(testId("run-sound-check")).click();
+    await focusSelector(testId("run-sound-check"));
+    await browser.keys("\uE007");
     await waitForStatus("Sound check ready:");
     await waitFor(testId("artifact-preview"), "saved workspace inventory artifact");
 
@@ -105,7 +147,8 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
     assert.equal(receipts.length, 1, "A scan must save one read-only inventory receipt");
     assert.equal(await receipts[0].getAttribute("data-evidence-kind"), "read_only_inventory");
 
-    await $(testId("approve-mission")).click();
+    await focusSelector(testId("approve-mission"));
+    await browser.keys("\uE00D");
     await waitForStatus("Mission approved.");
     await browser.waitUntil(
       async () => (await $(missionSelector).getText()).includes("COMPLETED"),
@@ -140,9 +183,11 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
     );
 
     await waitFor(projectSelector, "persisted project after application restart");
-    await $(projectSelector).click();
+    await focusSelector(projectSelector);
+    await browser.keys("\uE007");
     await waitFor(missionSelector, "persisted mission after application restart");
-    await $(missionSelector).click();
+    await focusSelector(missionSelector);
+    await browser.keys("\uE00D");
 
     await browser.waitUntil(
       async () => (await $(missionSelector).getText()).includes("COMPLETED"),
@@ -153,6 +198,10 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
       },
     );
     await waitFor(testId("artifact-preview"), "persisted inventory artifact");
+    await focusSelector(testId("artifact-preview"));
+    assert.equal((await activeFocus()).testId, "artifact-preview");
+    await focusSelector(testId("evidence-list"));
+    assert.equal((await activeFocus()).testId, "evidence-list");
     const persistedArtifact = await $(testId("artifact-preview")).getText();
     assert.match(persistedArtifact, /README\.md/);
     assert.match(persistedArtifact, /src\/index\.ts/);

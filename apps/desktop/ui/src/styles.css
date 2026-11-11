@@ -21,12 +21,30 @@ body { margin: 0; min-width: 360px; min-height: 100vh; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .5; }
-button:focus-visible, input:focus-visible, textarea:focus-visible {
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex="0"]:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 3px;
+  scroll-margin-block: 18px;
 }
 ::selection { color: var(--asphalt); background: var(--lime); }
 
+.skip-link {
+  position: absolute;
+  z-index: 20;
+  top: 8px;
+  left: 8px;
+  transform: translateY(-180%);
+  padding: 10px 12px;
+  border: 1px solid var(--cyan);
+  background: var(--ink);
+  color: var(--paper);
+  font: 10px var(--mono);
+}
+.skip-link:focus { transform: translateY(0); }
 .app-shell {
   max-width: 1680px;
   margin: 0 auto;
@@ -196,6 +214,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 .stack-form textarea { resize: vertical; min-height: 78px; line-height: 1.5; }
 .stack-form input:focus, .stack-form textarea:focus { border-color: var(--lime); }
+.stack-form input:focus-visible,
+.stack-form textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
 .stack-form input::placeholder, .stack-form textarea::placeholder { color: #6f6b70; }
 .button {
   display: flex;
@@ -225,6 +248,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   padding-bottom: 8px;
 }
 .project-list, .mission-list, .evidence-list { display: grid; gap: 6px; }
+.evidence-list { scroll-margin-block: 18px; }
 .project-item, .mission-item {
   display: flex;
   align-items: center;
@@ -289,6 +313,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .artifact-meta strong { font-size: 12px; }
 .artifact-meta span { color: #88838a; font: 8px var(--mono); }
 .artifact-preview {
+  scroll-margin-block: 18px;
   max-height: 330px;
   overflow: auto;
   padding: 13px;

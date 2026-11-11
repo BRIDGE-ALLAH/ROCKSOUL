@@ -102,3 +102,26 @@ This smoke test is not installer acceptance. Tauri bundling remains disabled. A 
 - [ ] Record Windows version/build, app commit, selected destination outcome, manifest/hash verification, and sanitized screenshots. Do not include private workspace contents in the evidence.
 
 WebDriver cannot control the native Windows Save dialog outside the WebView DOM. The native E2E job therefore verifies app launch and vault lifecycle but does not substitute for this manual Save-dialog acceptance.
+
+## P0-F15 — Keyboard-only workflow acceptance
+
+This walkthrough must be performed in a real Windows desktop session with the mouse/trackpad set aside. Automated WebDriver coverage checks the WebView's semantic controls and tab order; it cannot replace a native OS-dialog walkthrough.
+
+Record the Windows edition/build, WebView2 runtime, app commit, keyboard layout, operator, date, results, and sanitized screenshots.
+
+- [ ] Launch Rocksoul and wait for the header to report **LOCAL VAULT**.
+- [ ] Press Tab until the **Skip to project and mission workbench** link receives visible focus; press Enter and confirm focus moves to the workbench.
+- [ ] Continue with Tab through project name, existing folder path, BROWSE, and LINK PROJECT. Confirm the visible focus ring follows each control in that order.
+- [ ] Enter a synthetic project name and a valid local test path. Submit **LINK PROJECT** using Enter; confirm the project is selected without using a pointer.
+- [ ] Tab through mission title, objective, and DRAFT MISSION. Create a draft with Enter; confirm the mission appears and becomes selected.
+- [ ] Reach the mission list with Tab and select a mission using Enter or Space.
+- [ ] Reach **RUN SOUND CHECK** using Tab and activate with Enter. Confirm the status update and artifact are visible.
+- [ ] Tab to the artifact region and evidence list. Confirm both can receive visible focus and can be scrolled with the keyboard when their contents overflow.
+- [ ] Reach **APPROVE & COMPLETE** using Tab and activate with Space. Confirm the mission moves to completed and the human-approval receipt appears.
+- [ ] Reopen BROWSE, choose a directory, and confirm focus returns to BROWSE after the native dialog closes. Repeat and press Escape to cancel; confirm the prior path is unchanged and focus returns to BROWSE.
+- [ ] Reopen CREATE VERIFIED BACKUP, select a new destination, and confirm focus returns to the backup action after the native Save dialog closes. Repeat and cancel with Escape; confirm no backup is created and focus returns to the action.
+- [ ] Use Tab/Shift+Tab to move through project, mission, Scout, approval, artifact, and evidence controls without a pointer. No focused control is skipped or visually obscured.
+- [ ] Relaunch the app and repeat project/mission/result navigation; confirm project, completed mission, artifact, and receipts remain available.
+- [ ] Confirm keyboard navigation itself does not modify any selected workspace files.
+
+The automated Windows E2E asserts tab order for both forms, Enter activation for project/mission creation and Scout, Space activation for approval, and keyboard focusability of persisted artifact/evidence regions. Native folder-picker and Save-dialog focus restoration remain manual OS integration checks.
