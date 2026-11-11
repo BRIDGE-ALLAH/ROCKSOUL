@@ -187,12 +187,11 @@ impl Store {
         .rows_affected();
 
         if changed != 1 {
-            let status: Option<String> = sqlx::query_scalar(
-                "SELECT status FROM missions WHERE id = ?",
-            )
-            .bind(mission_id)
-            .fetch_optional(&self.pool)
-            .await?;
+            let status: Option<String> =
+                sqlx::query_scalar("SELECT status FROM missions WHERE id = ?")
+                    .bind(mission_id)
+                    .fetch_optional(&self.pool)
+                    .await?;
 
             return match status {
                 None => Err(StoreError::NotFound),
@@ -807,19 +806,27 @@ mod tests {
             .await?;
 
         assert!(matches!(
-            store.update_draft_mission(&mission.id, " ", "Valid objective.").await,
+            store
+                .update_draft_mission(&mission.id, " ", "Valid objective.")
+                .await,
             Err(StoreError::InvalidInput(_))
         ));
         assert!(matches!(
-            store.update_draft_mission(&mission.id, &"x".repeat(121), "Valid objective.").await,
+            store
+                .update_draft_mission(&mission.id, &"x".repeat(121), "Valid objective.")
+                .await,
             Err(StoreError::InvalidInput(_))
         ));
         assert!(matches!(
-            store.update_draft_mission(&mission.id, "Valid title", " ").await,
+            store
+                .update_draft_mission(&mission.id, "Valid title", " ")
+                .await,
             Err(StoreError::InvalidInput(_))
         ));
         assert!(matches!(
-            store.update_draft_mission("missing-mission", "Valid title", "Valid objective.").await,
+            store
+                .update_draft_mission("missing-mission", "Valid title", "Valid objective.")
+                .await,
             Err(StoreError::NotFound)
         ));
 
@@ -843,7 +850,10 @@ mod tests {
         assert_eq!(persisted.len(), 1);
         assert_eq!(persisted[0].id, mission.id);
         assert_eq!(persisted[0].title, "Corrected title");
-        assert_eq!(persisted[0].objective, "Revised objective with a clear outcome.");
+        assert_eq!(
+            persisted[0].objective,
+            "Revised objective with a clear outcome."
+        );
 
         let inspection = reopened.inspect_workspace(&project.id, &mission.id).await?;
         assert_eq!(inspection.artifact.mission_id, mission.id);
@@ -860,9 +870,11 @@ mod tests {
         let after_rejected_edit = reopened.list_missions(&project.id).await?;
         assert_eq!(after_rejected_edit[0].id, mission.id);
         assert_eq!(after_rejected_edit[0].title, "Corrected title");
-        assert_eq!(after_rejected_edit[0].objective, "Revised objective with a clear outcome.");
+        assert_eq!(
+            after_rejected_edit[0].objective,
+            "Revised objective with a clear outcome."
+        );
         assert_eq!(after_rejected_edit[0].status, "completed");
         Ok(())
     }
-
 }
