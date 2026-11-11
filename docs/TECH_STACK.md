@@ -156,6 +156,8 @@ Local inference can use an isolated sidecar such as llama.cpp or another maintai
 
 ## Platform stance
 
+The evidence-backed per-capability support status and CI coverage live in [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md). A platform's inclusion in the design target list below is not a claim of implemented or supported runtime behavior.
+
 Design for Windows first if that's the first actual user target, but keep the core platform-neutral. Platform integrations must be explicit adapters:
 - Windows: WebView2, Job Objects, Credential Manager, named pipes.
 - macOS: WKWebView, sandbox/container APIs, Keychain, XPC/Unix socket.

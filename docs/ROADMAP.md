@@ -14,6 +14,10 @@ This roadmap is a capability-gated delivery sequence, not a marketing calendar. 
 
 No phase checkbox is complete merely because its issues are created. Exit gates require merged implementation and named verification evidence.
 
+## Platform support
+
+See [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md) for the current Windows/macOS/Linux capability matrix, the distinction between core CI and native desktop runtime evidence, and the fail-closed status of unavailable integrations.
+
 ## Current repository state — 11 November 2026
 
 The first local-mission slice is merged into `main` through [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). Its main-branch CI [run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, five core tests, Clippy, UI typecheck/production build, and Windows compile checking.
