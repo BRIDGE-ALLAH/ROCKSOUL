@@ -81,9 +81,13 @@ Start at [Issue #4](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/4), then cho
 
 The first local-mission slice was merged into `main` via [PR #2](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/2). [CI run #42832504466](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42832504466) passed Rust formatting, five core tests, Clippy, UI typecheck/production build, and Windows compile checking.
 
-The Windows native E2E lifecycle is tracked by [draft PR #3](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/3) and [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5). The latest observed PR run, [#42851122894](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42851122894), passed Rust core and UI jobs and launched the native app/WebDriver session, but the Windows E2E scenario **failed** in the Tauri service `patchBrowserExecute` hook (`TypeError: Cannot read properties of undefined (reading 'bind')`). This does not prove a vault/SQLite failure and is not accepted as an E2E pass. The real Windows shell folder-picker select/cancel check is a separate manual gate in [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6); its procedure is documented in [WINDOWS_SMOKE_TEST.md](docs/WINDOWS_SMOKE_TEST.md).
+The automated Windows native E2E lifecycle is now merged into `main` via [PR #110](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/110), with [P0-F01 #5](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/5) closed. The passing native scenario launches the real Tauri app, creates a project and mission, runs the metadata-only Scout, records approval evidence, restarts the process, and verifies SQLite restoration. The latest observed `main` CI run, [#42898176738](https://github.com/BRIDGE-ALLAH/ROCKSOUL/actions/runs/42898176738), passed Rust formatting/tests/Clippy, UI typecheck/build, and Windows native E2E.
 
-This is prototype code, not a release-ready installer. Backup/restore, installer signing, updates, clean-machine installation, recovery, and release security gates remain open.
+The native Windows shell folder-picker select/cancel/invalid-path check remains a separate **manual, unverified gate** in [P0-F02 #6](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/6); its procedure is documented in [WINDOWS_SMOKE_TEST.md](docs/WINDOWS_SMOKE_TEST.md).
+
+A verified WAL-safe SQLite snapshot primitive is now merged via [PR #109](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/109), and [P0-F11 #15](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/15) is closed. The desktop backup-export UI and atomic restore flow remain open ([#16](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/16), [#17](https://github.com/BRIDGE-ALLAH/ROCKSOUL/issues/17)). The prototype database is not yet encrypted by Rocksoul; the data-at-rest decision is still under review in [#92 / PR #108](https://github.com/BRIDGE-ALLAH/ROCKSOUL/pull/108).
+
+This is still prototype code, not a release-ready installer. Installer signing, updates, clean-machine installation, uninstall/rollback, the manual Windows picker check, and remaining release security gates are open.
 
 ## Technical direction
 
