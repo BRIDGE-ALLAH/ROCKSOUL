@@ -25,4 +25,13 @@ pub enum StoreError {
 
     #[error("Background inventory task failed: {0}")]
     Task(String),
+
+    #[error("Unsupported event schema version: {0}")]
+    UnsupportedEventSchema(i64),
+
+    #[error("Invalid event payload: {0}")]
+    InvalidEventPayload(String),
+
+    #[error("Stored event record is invalid: {0}")]
+    InvalidEventRecord(String),
 }
