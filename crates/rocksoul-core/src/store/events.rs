@@ -163,11 +163,7 @@ impl EventDraft {
         }
     }
 
-    pub fn with_actor(
-        mut self,
-        actor_type: EventActorType,
-        actor_id: impl Into<String>,
-    ) -> Self {
+    pub fn with_actor(mut self, actor_type: EventActorType, actor_id: impl Into<String>) -> Self {
         self.actor_type = Some(actor_type);
         self.actor_id = Some(actor_id.into());
         self
@@ -377,14 +373,7 @@ impl Store {
         let occurred_at = chrono::Utc::now().to_rfc3339();
 
         let mut transaction = self.pool.begin().await?;
-        insert_event(
-            &mut transaction,
-            &id,
-            &occurred_at,
-            &draft,
-            &payload_json,
-        )
-        .await?;
+        insert_event(&mut transaction, &id, &occurred_at, &draft, &payload_json).await?;
         let row = sqlx::query_as::<_, EventRow>(
             "SELECT id, event_type, schema_version, subject_type, subject_id,
                     actor_type, actor_id, occurred_at, correlation_id, payload_json
@@ -449,7 +438,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn event_round_trip_is_typed_bounded_and_append_only() -> Result<(), Box<dyn std::error::Error>> {
+    async fn event_round_trip_is_typed_bounded_and_append_only()
+    -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempdir()?;
         let database = directory.path().join("rocksoul.sqlite3");
         let store = Store::connect(&database).await?;
@@ -474,20 +464,26 @@ mod tests {
             .bind(&written.id)
             .execute(&store.pool)
             .await;
-        assert!(update.is_err(), "event UPDATE must be rejected by the database trigger");
+        assert!(
+            update.is_err(),
+            "event UPDATE must be rejected by the database trigger"
+        );
 
         let delete = sqlx::query("DELETE FROM event_ledger WHERE id = ?")
             .bind(&written.id)
             .execute(&store.pool)
             .await;
-        assert!(delete.is_err(), "event DELETE must be rejected by the database trigger");
+        assert!(
+            delete.is_err(),
+            "event DELETE must be rejected by the database trigger"
+        );
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn unsupported_schema_sensitive_fields_and_oversized_payloads_are_rejected(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn unsupported_schema_sensitive_fields_and_oversized_payloads_are_rejected()
+    -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempdir()?;
         let store = Store::connect(&directory.path().join("rocksoul.sqlite3")).await?;
 
@@ -544,8 +540,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn event_ordering_is_newest_first_and_page_size_is_bounded(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn event_ordering_is_newest_first_and_page_size_is_bounded()
+    -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempdir()?;
         let store = Store::connect(&directory.path().join("rocksoul.sqlite3")).await?;
 
@@ -568,20 +564,28 @@ mod tests {
         for pair in events.windows(2) {
             assert!(pair[0].occurred_at >= pair[1].occurred_at);
         }
-        assert!(store
-            .list_subject_events(EventSubjectType::Mission, "mission-1", 0)
-            .await
-            .is_err());
-        assert!(store
-            .list_subject_events(EventSubjectType::Mission, "mission-1", MAX_EVENT_PAGE_SIZE + 1)
-            .await
-            .is_err());
+        assert!(
+            store
+                .list_subject_events(EventSubjectType::Mission, "mission-1", 0)
+                .await
+                .is_err()
+        );
+        assert!(
+            store
+                .list_subject_events(
+                    EventSubjectType::Mission,
+                    "mission-1",
+                    MAX_EVENT_PAGE_SIZE + 1
+                )
+                .await
+                .is_err()
+        );
         Ok(())
     }
 
     #[tokio::test]
-    async fn event_insert_participates_in_a_transaction_and_rolls_back(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn event_insert_participates_in_a_transaction_and_rolls_back()
+    -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempdir()?;
         let store = Store::connect(&directory.path().join("rocksoul.sqlite3")).await?;
         let draft = event("mission-rollback");
@@ -590,14 +594,7 @@ mod tests {
         let occurred_at = chrono::Utc::now().to_rfc3339();
 
         let mut transaction = store.pool.begin().await?;
-        insert_event(
-            &mut transaction,
-            &id,
-            &occurred_at,
-            &draft,
-            &payload_json,
-        )
-        .await?;
+        insert_event(&mut transaction, &id, &occurred_at, &draft, &payload_json).await?;
         transaction.rollback().await?;
 
         let rows = store
@@ -608,8 +605,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn reopening_an_existing_database_preserves_data_and_event_schema(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn reopening_an_existing_database_preserves_data_and_event_schema()
+    -> Result<(), Box<dyn std::error::Error>> {
         let directory = tempdir()?;
         let database = directory.path().join("rocksoul.sqlite3");
         let first_store = Store::connect(&database).await?;
@@ -624,10 +621,9 @@ mod tests {
         assert_eq!(records[0].id, event.id);
         assert_eq!(records[0].payload, event.payload);
 
-        let schema_version: i64 =
-            sqlx::query_scalar("SELECT MAX(version) FROM _sqlx_migrations")
-                .fetch_one(&reopened.pool)
-                .await?;
+        let schema_version: i64 = sqlx::query_scalar("SELECT MAX(version) FROM _sqlx_migrations")
+            .fetch_one(&reopened.pool)
+            .await?;
         assert!(schema_version >= 4);
         Ok(())
     }
