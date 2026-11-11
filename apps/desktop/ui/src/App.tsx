@@ -71,6 +71,8 @@ export default function App() {
   const [objective, setObjective] = useState(
     "Create a safe, read-only inventory of this project's structure.",
   );
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftObjective, setDraftObjective] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [vaultState, setVaultState] = useState<"preview" | "connecting" | "ready" | "error">(
@@ -92,6 +94,11 @@ export default function App() {
     [missions, missionId],
   );
   const latestArtifact = artifacts[0] ?? null;
+
+  useEffect(() => {
+    setDraftTitle(selectedMission?.title ?? "");
+    setDraftObjective(selectedMission?.objective ?? "");
+  }, [selectedMission?.id, selectedMission?.title, selectedMission?.objective]);
 
   const refreshProjects = useCallback(async (preferredProjectId?: string) => {
     desktopOnly();
@@ -272,6 +279,29 @@ export default function App() {
       setEvidence(nextEvidence);
       setMissionTitle("");
       setNotice("Mission drafted. No tools have run.");
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUpdateDraftMission(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedMission || selectedMission.status !== "draft") return;
+    setBusy(true);
+    setError("");
+    try {
+      desktopOnly();
+      const updated = await invoke<Mission>("update_draft_mission", {
+        missionId: selectedMission.id,
+        title: draftTitle,
+        objective: draftObjective,
+      });
+      setMissions((current) => current.map((mission) =>
+        mission.id === updated.id ? updated : mission
+      ));
+      setNotice("Draft updated. Its identity is unchanged and no tools have run.");
     } catch (cause) {
       setError(String(cause));
     } finally {
@@ -498,6 +528,37 @@ export default function App() {
                   DRAFT MISSION <span>↗</span>
                 </button>
               </form>
+              {selectedMission?.status === "draft" && (
+                <section className="mission-edit" aria-labelledby="edit-draft-heading">
+                  <div className="list-label" id="edit-draft-heading">EDIT SELECTED DRAFT</div>
+                  <form className="stack-form" onSubmit={handleUpdateDraftMission} data-testid="edit-draft-mission-form">
+                    <label>
+                      Draft title
+                      <input
+                        data-testid="edit-draft-title"
+                        value={draftTitle}
+                        onChange={(event) => setDraftTitle(event.target.value)}
+                        maxLength={120}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Draft objective
+                      <textarea
+                        data-testid="edit-draft-objective"
+                        value={draftObjective}
+                        onChange={(event) => setDraftObjective(event.target.value)}
+                        maxLength={2000}
+                        rows={3}
+                        required
+                      />
+                    </label>
+                    <button className="button button-ink" type="submit" data-testid="save-draft-mission" disabled={busy || !inDesktop}>
+                      SAVE DRAFT CHANGES <span>↗</span>
+                    </button>
+                  </form>
+                </section>
+              )}
               <div className="list-label">MISSION BOARD / {missions.length}</div>
               <div className="mission-list">
                 {missions.map((mission) => (

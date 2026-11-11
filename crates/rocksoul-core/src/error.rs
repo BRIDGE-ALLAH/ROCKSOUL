@@ -8,6 +8,9 @@ pub enum StoreError {
     #[error("The requested project or mission was not found.")]
     NotFound,
 
+    #[error("Only a mission in draft state can be edited.")]
+    MissionNotEditable,
+
     #[error("The selected project directory is not available: {0}")]
     ProjectDirectory(String),
 

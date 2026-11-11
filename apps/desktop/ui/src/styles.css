@@ -239,6 +239,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .project-item:hover, .mission-item:hover { background: rgba(255,255,255,.035); }
 .project-item.active { background: rgba(216,255,53,.07); border-color: rgba(216,255,53,.35); }
 .mission-item.active { background: rgba(255,49,92,.09); border-color: rgba(255,49,92,.35); }
+.mission-edit { margin-top: 12px; padding-top: 2px; border-top: 1px solid #38363c; }
+.mission-edit .button-ink { margin-top: 4px; }
 .project-glyph, .mission-bullet { color: var(--lime); font-size: 17px; }
 .project-name, .mission-item > span:nth-child(2) { min-width: 0; flex: 1; font-size: 12px; font-weight: 600; }
 .project-name small, .mission-item small {
