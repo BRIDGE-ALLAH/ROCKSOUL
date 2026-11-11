@@ -501,7 +501,8 @@ mod tests {
         assert_eq!(written.actor_type, Some(EventActorType::User));
         assert_eq!(written.actor_id.as_deref(), Some("local-user"));
         assert_eq!(written.correlation_id.as_deref(), Some("mission-run-1"));
-        assert_eq!(written.payload["title"], "A bounded mission");
+        assert_eq!(written.payload["title_length"], 18);
+        assert_eq!(written.payload["objective_length"], 42);
 
         let listed = store
             .list_subject_events(EventSubjectType::Mission, "mission-1", 20)
@@ -587,6 +588,7 @@ mod tests {
         ));
 
         let invalid_actor = EventDraft {
+            actor_type: None,
             actor_id: Some("missing-type".into()),
             ..event("mission-1")
         };
