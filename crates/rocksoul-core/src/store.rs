@@ -204,13 +204,12 @@ impl Store {
         let title = validate_text("Mission title", title, 120)?;
         let objective = validate_text("Mission objective", objective, 2_000)?;
 
-        let archived_at: Option<String> = sqlx::query_scalar(
-            "SELECT archived_at FROM projects WHERE id = ?",
-        )
-        .bind(project_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(StoreError::NotFound)?;
+        let archived_at: Option<String> =
+            sqlx::query_scalar("SELECT archived_at FROM projects WHERE id = ?")
+                .bind(project_id)
+                .fetch_optional(&self.pool)
+                .await?
+                .ok_or(StoreError::NotFound)?;
 
         if archived_at.is_some() {
             return Err(StoreError::ProjectArchived);
@@ -871,22 +870,33 @@ mod tests {
         assert_eq!(archived_projects[0].id, project.id);
 
         let archived_again = store.archive_project(&project.id).await?;
-        assert_eq!(archived_again.archived_at.as_deref(), Some(archived_at.as_str()));
+        assert_eq!(
+            archived_again.archived_at.as_deref(),
+            Some(archived_at.as_str())
+        );
         assert_eq!(store.list_archived_projects().await?.len(), 1);
 
         assert!(matches!(
-            store.create_mission(&project.id, "Blocked", "Must not be created.").await,
+            store
+                .create_mission(&project.id, "Blocked", "Must not be created.")
+                .await,
             Err(StoreError::ProjectArchived)
         ));
         assert!(matches!(
-            store.inspect_workspace(&project.id, &pending_mission.id).await,
+            store
+                .inspect_workspace(&project.id, &pending_mission.id)
+                .await,
             Err(StoreError::ProjectArchived)
         ));
 
         let missions = store.list_missions(&project.id).await?;
         assert_eq!(missions.len(), 2);
         assert_eq!(
-            missions.iter().find(|m| m.id == completed_mission.id).unwrap().status,
+            missions
+                .iter()
+                .find(|m| m.id == completed_mission.id)
+                .unwrap()
+                .status,
             "completed"
         );
         assert_eq!(store.list_artifacts(&completed_mission.id).await?.len(), 1);
@@ -901,8 +911,14 @@ mod tests {
         assert!(reopened.list_projects().await?.is_empty());
         assert_eq!(reopened.list_archived_projects().await?.len(), 1);
         assert_eq!(reopened.list_missions(&project.id).await?.len(), 2);
-        assert_eq!(reopened.list_artifacts(&completed_mission.id).await?.len(), 1);
-        assert_eq!(reopened.list_evidence(&completed_mission.id).await?.len(), 2);
+        assert_eq!(
+            reopened.list_artifacts(&completed_mission.id).await?.len(),
+            1
+        );
+        assert_eq!(
+            reopened.list_evidence(&completed_mission.id).await?.len(),
+            2
+        );
 
         let restored = reopened.unarchive_project(&project.id).await?;
         assert!(restored.archived_at.is_none());
