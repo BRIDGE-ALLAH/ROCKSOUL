@@ -48,6 +48,28 @@ type InspectionResult = {
   truncated: boolean;
 };
 
+
+type StartupStatus = {
+  phase: "ready" | "failed";
+  recoveryWarning: string | null;
+  errorCode: string | null;
+};
+
+function startupFailureMessage(errorCode: string | null): string {
+  switch (errorCode) {
+    case "application_data_directory_unavailable":
+      return "Rocksoul could not access its local application data directory. The vault was not opened.";
+    case "database_connection_failed":
+      return "Rocksoul could not connect to its local SQLite vault. Project commands are unavailable.";
+    case "database_migration_failed":
+      return "Rocksoul could not complete the database migration. The vault was not marked ready.";
+    case "application_data_io_failed":
+      return "Rocksoul could not prepare local database storage. The vault was not marked ready.";
+    default:
+      return "Rocksoul could not verify the local database startup. The vault was not marked ready.";
+  }
+}
+
 function formatDate(value: string): string {
   return new Date(value).toLocaleString();
 }
@@ -76,6 +98,7 @@ export default function App() {
   const [vaultState, setVaultState] = useState<"preview" | "connecting" | "ready" | "error">(
     isTauri() ? "connecting" : "preview",
   );
+  const [recoveryWarning, setRecoveryWarning] = useState<string | null>(null);
   const [notice, setNotice] = useState(() =>
     isTauri()
       ? "Connecting to the local vault..."
@@ -140,16 +163,39 @@ export default function App() {
     }
 
     setVaultState("connecting");
-    void refreshProjects()
-      .then(() => {
+    let active = true;
+    const connect = async () => {
+      try {
+        const startup = await invoke<StartupStatus>("get_startup_status");
+        if (!active) return;
+        setRecoveryWarning(startup.recoveryWarning);
+
+        if (startup.phase !== "ready") {
+          setVaultState("error");
+          setError(startupFailureMessage(startup.errorCode));
+          setNotice("The local vault did not become ready. Project commands remain unavailable.");
+          return;
+        }
+
+        await refreshProjects();
+        if (!active) return;
         setVaultState("ready");
-        setNotice("Local vault connected. Projects are stored on this device.");
-      })
-      .catch((cause: unknown) => {
+        setNotice(
+          startup.recoveryWarning
+            ? "Local vault connected. A previous-session warning needs your review."
+            : "Local vault connected. Projects are stored on this device.",
+        );
+      } catch (cause: unknown) {
+        if (!active) return;
         setVaultState("error");
         setError(String(cause));
-        setNotice("The local vault could not be opened.");
-      });
+        setNotice("The local vault startup status could not be verified.");
+      }
+    };
+    void connect();
+    return () => {
+      active = false;
+    };
   }, [inDesktop, refreshProjects]);
 
   async function handleSelectProject(nextProjectId: string) {
@@ -374,10 +420,15 @@ export default function App() {
         </div>
       )}
 
-      <div className="status-line" role="status" data-testid="status-line">
+      <div className="status-line" role="status" aria-live="polite" data-testid="status-line">
         <span className="status-icon">↳</span>
         {notice}
       </div>
+      {recoveryWarning && (
+        <div className="warning-banner" role="alert" data-testid="startup-warning">
+          {recoveryWarning}
+        </div>
+      )}
       {error && <div className="error-banner" role="alert">{error}</div>}
 
       <section className="workbench">

@@ -50,6 +50,7 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
     await access(workspace);
 
     await waitFor(testId("vault-status"), "local vault status", 60_000);
+    assert.equal(await $$(testId("startup-warning")).length, 0, "A first launch should not report an unclean exit");
     await browser.waitUntil(
       async () => (await $(testId("vault-status")).getText()).includes("LOCAL VAULT"),
       {

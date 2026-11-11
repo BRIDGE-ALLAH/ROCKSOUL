@@ -88,3 +88,21 @@ npm test
 ## Release boundary
 
 This smoke test is not installer acceptance. Tauri bundling remains disabled. A releasable Windows build still needs a reproducible installer, signing and signature verification, clean-machine install, update/rollback, backup/restore, uninstall, and security/supply-chain gates. Those are tracked by the separate P0 and OPS task issues; do not treat this checklist as a substitute.
+
+## P0-F14 — Startup, shutdown, and unclean-exit diagnostics
+
+Automated Rust tests cover the active-session marker lifecycle and fixed error-code redaction. The native desktop smoke below still requires an interactive Windows machine for process termination and startup-failure injection.
+
+Record the app commit, Windows edition/build, WebView2 runtime, operator, date, and sanitized evidence. Do not include real app-data paths or private project contents in logs or screenshots.
+
+- [ ] First launch with no prior session marker; confirm the vault reports CONNECTING, then LOCAL VAULT only after SQLite connection and all migrations succeed.
+- [ ] Exit Rocksoul normally. Confirm shutdown logs show database pool close completed before the active-session marker is cleared.
+- [ ] Relaunch after the clean exit; confirm there is no previous-session warning.
+- [ ] Start Rocksoul, create a synthetic mission, then terminate the process forcibly (Task Manager / `Stop-Process -Force`) without closing the app. Relaunch and confirm the warning `A previous session ended...` is visible while the database is re-opened and checked.
+- [ ] Confirm the warning does not claim an interrupted operation succeeded and does not automatically replay or mutate any mission.
+- [ ] With a synthetic test profile, make the app database unavailable or use a copied corrupt database fixture. Confirm the UI reports VAULT ERROR, does not report LOCAL VAULT, and project/mission commands remain unavailable.
+- [ ] Restore the test database fixture and relaunch. Confirm startup can recover and the warning clears after a later graceful exit.
+- [ ] Review structured logs: startup stages distinguish session marker, database connection, migration, UI host readiness, pool close, and marker cleanup.
+- [ ] Confirm logs contain only fixed stage/error codes and never include application-data paths, project paths, source/document contents, prompts, credentials, or tokens.
+
+A forced-termination check must be performed on a real Windows process. A WebDriver session reload is a graceful lifecycle action and is not evidence of crash detection.

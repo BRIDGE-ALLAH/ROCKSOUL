@@ -41,6 +41,22 @@ struct InventoryFile {
 }
 
 impl Store {
+    /// Stop accepting new database work and wait for in-flight connections to close.
+    /// The desktop lifecycle marker is only cleared after this method returns.
+    pub async fn close(&self) {
+        tracing::info!(
+            event = "database_shutdown",
+            stage = "pool_close",
+            outcome = "started"
+        );
+        self.pool.close().await;
+        tracing::info!(
+            event = "database_shutdown",
+            stage = "pool_close",
+            outcome = "succeeded"
+        );
+    }
+
     pub async fn connect(database_path: &Path) -> Result<Self, StoreError> {
         if let Some(parent) = database_path.parent() {
             fs::create_dir_all(parent)?;
@@ -54,12 +70,55 @@ impl Store {
             .synchronous(SqliteSynchronous::Normal)
             .busy_timeout(Duration::from_secs(5));
 
-        let pool = SqlitePoolOptions::new()
+        tracing::info!(
+            event = "database_startup",
+            stage = "connection",
+            outcome = "started"
+        );
+        let pool = match SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(options)
-            .await?;
+            .await
+        {
+            Ok(pool) => {
+                tracing::info!(
+                    event = "database_startup",
+                    stage = "connection",
+                    outcome = "succeeded"
+                );
+                pool
+            }
+            Err(error) => {
+                tracing::error!(
+                    event = "database_startup",
+                    stage = "connection",
+                    outcome = "failed",
+                    error_code = "database_connection_failed"
+                );
+                return Err(error.into());
+            }
+        };
 
-        sqlx::migrate!("./migrations").run(&pool).await?;
+        tracing::info!(
+            event = "database_startup",
+            stage = "migration",
+            outcome = "started"
+        );
+        if let Err(error) = sqlx::migrate!("./migrations").run(&pool).await {
+            tracing::error!(
+                event = "database_startup",
+                stage = "migration",
+                outcome = "failed",
+                error_code = "database_migration_failed"
+            );
+            pool.close().await;
+            return Err(error.into());
+        }
+        tracing::info!(
+            event = "database_startup",
+            stage = "migration",
+            outcome = "succeeded"
+        );
 
         Ok(Self { pool })
     }
@@ -740,4 +799,17 @@ mod tests {
         );
         Ok(())
     }
+
+    #[tokio::test]
+    async fn close_waits_for_pool_and_rejects_new_queries() -> Result<(), Box<dyn Error>> {
+        let temporary = tempdir()?;
+        let store = Store::connect(&temporary.path().join("rocksoul.sqlite3")).await?;
+        assert!(store.list_projects().await.is_ok());
+
+        store.close().await;
+
+        assert!(store.list_projects().await.is_err());
+        Ok(())
+    }
+
 }

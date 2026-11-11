@@ -1,19 +1,59 @@
-use std::fs;
+use std::sync::Mutex;
 
 use rocksoul_core::{Artifact, Evidence, InspectionResult, Mission, Project, Store};
+use serde::Serialize;
 use tauri::{Manager, State};
 
+mod lifecycle;
+
+use lifecycle::{LifecycleSession, safe_store_error_code};
+
 struct AppState {
-    store: Store,
+    store: Option<Store>,
+    startup_status: StartupStatus,
+    lifecycle_session: Mutex<Option<LifecycleSession>>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StartupStatus {
+    phase: String,
+    recovery_warning: Option<String>,
+    error_code: Option<String>,
+}
+
+impl StartupStatus {
+    fn ready(recovery_warning: Option<String>) -> Self {
+        Self {
+            phase: "ready".to_string(),
+            recovery_warning,
+            error_code: None,
+        }
+    }
+
+    fn failed(error_code: &'static str, recovery_warning: Option<String>) -> Self {
+        Self {
+            phase: "failed".to_string(),
+            recovery_warning,
+            error_code: Some(error_code.to_string()),
+        }
+    }
+}
+
+fn unavailable_store_error() -> String {
+    "The local vault did not become ready. Restart Rocksoul after resolving the startup issue."
+        .to_string()
+}
+
+#[tauri::command]
+fn get_startup_status(state: State<'_, AppState>) -> StartupStatus {
+    state.startup_status.clone()
 }
 
 #[tauri::command]
 async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
-    state
-        .store
-        .list_projects()
-        .await
-        .map_err(|error| error.to_string())
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store.list_projects().await.map_err(|error| error.to_string())
 }
 
 #[tauri::command(rename_all = "camelCase")]
@@ -22,8 +62,8 @@ async fn create_project(
     root_path: String,
     state: State<'_, AppState>,
 ) -> Result<Project, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .create_project(&name, &root_path)
         .await
         .map_err(|error| error.to_string())
@@ -34,8 +74,8 @@ async fn list_missions(
     project_id: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<Mission>, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .list_missions(&project_id)
         .await
         .map_err(|error| error.to_string())
@@ -48,8 +88,8 @@ async fn create_mission(
     objective: String,
     state: State<'_, AppState>,
 ) -> Result<Mission, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .create_mission(&project_id, &title, &objective)
         .await
         .map_err(|error| error.to_string())
@@ -61,8 +101,8 @@ async fn inspect_workspace(
     mission_id: String,
     state: State<'_, AppState>,
 ) -> Result<InspectionResult, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .inspect_workspace(&project_id, &mission_id)
         .await
         .map_err(|error| error.to_string())
@@ -73,8 +113,8 @@ async fn list_artifacts(
     mission_id: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<Artifact>, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .list_artifacts(&mission_id)
         .await
         .map_err(|error| error.to_string())
@@ -85,8 +125,8 @@ async fn list_evidence(
     mission_id: String,
     state: State<'_, AppState>,
 ) -> Result<Vec<Evidence>, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .list_evidence(&mission_id)
         .await
         .map_err(|error| error.to_string())
@@ -97,28 +137,129 @@ async fn approve_mission(
     mission_id: String,
     state: State<'_, AppState>,
 ) -> Result<Mission, String> {
-    state
-        .store
+    let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
+    store
         .approve_mission(&mission_id)
         .await
         .map_err(|error| error.to_string())
 }
 
+fn initialize_tracing() {
+    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(filter)
+        .with_target(false)
+        .with_current_span(false)
+        .with_span_list(false)
+        .try_init();
+}
+
 pub fn run() {
-    tauri::Builder::default()
+    initialize_tracing();
+    tracing::info!(
+        event = "app_startup",
+        stage = "runtime",
+        outcome = "started"
+    );
+
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let data_dir = app.path().app_local_data_dir()?;
-            fs::create_dir_all(&data_dir)?;
-            let database_path = data_dir.join("rocksoul.sqlite3");
+            let mut store = None;
+            let mut startup_status = StartupStatus::failed(
+                "application_data_directory_unavailable",
+                None,
+            );
+            let mut lifecycle_session = None;
 
-            let store = tauri::async_runtime::block_on(Store::connect(&database_path))
-                .map_err(|error| std::io::Error::other(error.to_string()))?;
+            match app.path().app_local_data_dir() {
+                Ok(data_dir) => {
+                    let (session, recovery_warning) = match LifecycleSession::begin(&data_dir) {
+                        Ok(started) => {
+                            tracing::info!(
+                                event = "app_startup",
+                                stage = "session_marker",
+                                outcome = "succeeded",
+                                previous_unclean_exit = started.previous_unclean_exit
+                            );
+                            let warning = started.previous_unclean_exit.then(|| {
+                                "A previous session ended before its clean-shutdown marker was cleared. The vault opened successfully; review the last operation before continuing.".to_string()
+                            });
+                            (Some(started.session), warning)
+                        }
+                        Err(_) => {
+                            tracing::warn!(
+                                event = "app_startup",
+                                stage = "session_marker",
+                                outcome = "failed",
+                                error_code = "lifecycle_marker_unavailable"
+                            );
+                            (
+                                None,
+                                Some("Rocksoul could not verify the previous shutdown state. The database can still open, but crash-detection evidence is unavailable.".to_string()),
+                            )
+                        }
+                    };
+                    lifecycle_session = session;
 
-            app.manage(AppState { store });
+                    let database_path = data_dir.join("rocksoul.sqlite3");
+                    tracing::info!(
+                        event = "app_startup",
+                        stage = "database_open_and_migrate",
+                        outcome = "started"
+                    );
+                    match tauri::async_runtime::block_on(Store::connect(&database_path)) {
+                        Ok(connected) => {
+                            tracing::info!(
+                                event = "app_startup",
+                                stage = "database_open_and_migrate",
+                                outcome = "succeeded"
+                            );
+                            store = Some(connected);
+                            startup_status = StartupStatus::ready(recovery_warning);
+                        }
+                        Err(error) => {
+                            let error_code = safe_store_error_code(&error);
+                            tracing::error!(
+                                event = "app_startup",
+                                stage = "database_open_and_migrate",
+                                outcome = "failed",
+                                error_code
+                            );
+                            startup_status = StartupStatus::failed(
+                                error_code,
+                                recovery_warning,
+                            );
+                        }
+                    }
+                }
+                Err(_) => {
+                    tracing::error!(
+                        event = "app_startup",
+                        stage = "application_data_directory",
+                        outcome = "failed",
+                        error_code = "application_data_directory_unavailable"
+                    );
+                }
+            }
+
+            tracing::info!(
+                event = "app_startup",
+                stage = "ui_host_ready",
+                outcome = "succeeded",
+                vault_ready = startup_status.phase == "ready"
+            );
+            app.manage(AppState {
+                store,
+                startup_status,
+                lifecycle_session: Mutex::new(lifecycle_session),
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            get_startup_status,
             list_projects,
             create_project,
             list_missions,
@@ -128,6 +269,54 @@ pub fn run() {
             list_artifacts,
             list_evidence
         ])
-        .run(tauri::generate_context!())
-        .expect("Rocksoul failed to start");
+        .build(tauri::generate_context!())
+        .expect("Rocksoul Tauri runtime could not be built");
+
+    app.run(|app_handle, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            tracing::info!(
+                event = "app_shutdown",
+                stage = "runtime_exit",
+                outcome = "started"
+            );
+
+            if let Some(state) = app_handle.try_state::<AppState>() {
+                if let Some(store) = state.store.as_ref() {
+                    tauri::async_runtime::block_on(store.close());
+                }
+
+                match state.lifecycle_session.lock() {
+                    Ok(mut guard) => {
+                        if let Some(session) = guard.take() {
+                            match session.finish_cleanly() {
+                                Ok(()) => tracing::info!(
+                                    event = "app_shutdown",
+                                    stage = "session_marker",
+                                    outcome = "clean"
+                                ),
+                                Err(_) => tracing::error!(
+                                    event = "app_shutdown",
+                                    stage = "session_marker",
+                                    outcome = "failed",
+                                    error_code = "clean_shutdown_marker_remove_failed"
+                                ),
+                            }
+                        } else {
+                            tracing::warn!(
+                                event = "app_shutdown",
+                                stage = "session_marker",
+                                outcome = "unavailable"
+                            );
+                        }
+                    }
+                    Err(_) => tracing::error!(
+                        event = "app_shutdown",
+                        stage = "session_marker",
+                        outcome = "failed",
+                        error_code = "lifecycle_state_lock_failed"
+                    ),
+                }
+            }
+        }
+    });
 }

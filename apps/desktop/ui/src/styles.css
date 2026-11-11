@@ -138,6 +138,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 .status-icon { color: var(--lime); font: 18px var(--mono); }
 .error-banner { border-left: 3px solid #ff444f; background: rgba(255,68,79,.12); color: #ffd9dc; overflow-wrap: anywhere; }
+.warning-banner {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--amber);
+  background: rgba(255,181,71,.1);
+  color: #ffe2ba;
+  font-size: 11px;
+  line-height: 1.5;
+}
 
 .workbench {
   display: grid;
