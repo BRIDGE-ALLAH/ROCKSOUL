@@ -96,6 +96,26 @@ class SupplyChainPolicyTests(unittest.TestCase):
         )
         self.assertEqual(errors, [])
 
+    def test_exception_without_exact_identity_is_rejected(self):
+        policy = dict(BASE_POLICY)
+        policy["license_exceptions"] = [
+            {
+                "version": "1.2.3",
+                "license": "NOASSERTION",
+                "rationale": "Incomplete exception.",
+                "owner": "maintainer",
+                "expires": "2026-12-01",
+            }
+        ]
+        _, errors = run_policy(
+            sbom_with_license(None),
+            {"matches": []},
+            policy,
+            today=self.today,
+            release_gate=True,
+        )
+        self.assertTrue(any("component" in error for error in errors))
+
     def test_expired_exception_fails_even_if_finding_disappears(self):
         policy = dict(BASE_POLICY)
         policy["vulnerability_exceptions"] = [
