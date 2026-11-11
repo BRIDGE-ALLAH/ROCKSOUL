@@ -41,6 +41,11 @@ struct InventoryFile {
 }
 
 impl Store {
+    /// Close the database pool before finalizing the app shutdown marker.
+    pub async fn close(&self) {
+        self.pool.close().await;
+    }
+
     pub async fn connect(database_path: &Path) -> Result<Self, StoreError> {
         if let Some(parent) = database_path.parent() {
             fs::create_dir_all(parent)?;
