@@ -225,6 +225,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   padding-bottom: 8px;
 }
 .project-list, .mission-list, .evidence-list { display: grid; gap: 6px; }
+.project-row { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
+.project-row > .project-item { flex: 1; min-width: 0; }
+.project-action { flex: 0 0 auto; align-self: stretch; padding: 0 9px; border: 1px solid #4b4850; color: #b8b2bc; background: transparent; font: 8px var(--mono); letter-spacing: .04em; }
+.project-action:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+.project-action.save { color: var(--asphalt); border-color: var(--lime); background: var(--lime); }
+.project-action:disabled { opacity: .45; }
+.project-rename-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 5px; width: 100%; min-width: 0; }
+.project-rename-form input { min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--lime); color: var(--paper); background: #0e0e11; font: 11px "Space Grotesk", sans-serif; }
 .project-item, .mission-item {
   display: flex;
   align-items: center;

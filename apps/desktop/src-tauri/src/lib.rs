@@ -30,6 +30,19 @@ async fn create_project(
 }
 
 #[tauri::command(rename_all = "camelCase")]
+async fn rename_project(
+    project_id: String,
+    name: String,
+    state: State<'_, AppState>,
+) -> Result<Project, String> {
+    state
+        .store
+        .rename_project(&project_id, &name)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
 async fn list_missions(
     project_id: String,
     state: State<'_, AppState>,
@@ -121,6 +134,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_projects,
             create_project,
+            rename_project,
             list_missions,
             create_mission,
             inspect_workspace,

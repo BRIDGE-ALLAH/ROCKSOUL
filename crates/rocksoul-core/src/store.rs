@@ -11,7 +11,7 @@ use serde::Serialize;
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use sqlx::{
-    SqlitePool,
+    Sqlite, SqlitePool, Transaction,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
 };
 use uuid::Uuid;
@@ -94,6 +94,9 @@ impl Store {
             updated_at: timestamp,
         };
 
+        // The insert is the first statement in the transaction, so SQLite
+        // serializes competing writers before the duplicate-name check.
+        let mut transaction = self.pool.begin().await?;
         sqlx::query(
             "INSERT INTO projects (id, name, root_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
         )
@@ -102,9 +105,58 @@ impl Store {
         .bind(&project.root_path)
         .bind(&project.created_at)
         .bind(&project.updated_at)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await?;
 
+        if project_name_conflicts(&mut transaction, &project.name, Some(&project.id)).await? {
+            transaction.rollback().await?;
+            return Err(StoreError::ProjectNameConflict);
+        }
+
+        transaction.commit().await?;
+        Ok(project)
+    }
+
+    /// Rename a project without changing its stable ID, canonical workspace
+    /// path, creation time, or any mission/artifact/evidence relationships.
+    pub async fn rename_project(
+        &self,
+        project_id: &str,
+        name: &str,
+    ) -> Result<Project, StoreError> {
+        let name = validate_text("Project name", name, 80)?;
+        let timestamp = now();
+        let mut transaction = self.pool.begin().await?;
+
+        // Updating first acquires SQLite's writer reservation before checking
+        // duplicates, preventing concurrent create/rename operations from
+        // passing the same availability check.
+        let changed = sqlx::query("UPDATE projects SET name = ?, updated_at = ? WHERE id = ?")
+            .bind(&name)
+            .bind(&timestamp)
+            .bind(project_id)
+            .execute(&mut *transaction)
+            .await?
+            .rows_affected();
+
+        if changed != 1 {
+            transaction.rollback().await?;
+            return Err(StoreError::NotFound);
+        }
+
+        if project_name_conflicts(&mut transaction, &name, Some(project_id)).await? {
+            transaction.rollback().await?;
+            return Err(StoreError::ProjectNameConflict);
+        }
+
+        let project = sqlx::query_as::<_, Project>(
+            "SELECT id, name, root_path, created_at, updated_at FROM projects WHERE id = ?",
+        )
+        .bind(project_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+
+        transaction.commit().await?;
         Ok(project)
     }
 
@@ -442,6 +494,29 @@ impl Store {
     }
 }
 
+/// Project names are trimmed and compared using Unicode lowercase. This
+/// intentionally does not apply Unicode NFC/NFD normalization, so visually
+/// equivalent but differently normalized code-point sequences remain distinct.
+fn normalize_project_name(name: &str) -> String {
+    name.trim().to_lowercase()
+}
+
+async fn project_name_conflicts(
+    transaction: &mut Transaction<'_, Sqlite>,
+    name: &str,
+    exclude_project_id: Option<&str>,
+) -> Result<bool, StoreError> {
+    let existing: Vec<(String, String)> = sqlx::query_as("SELECT id, name FROM projects")
+        .fetch_all(&mut **transaction)
+        .await?;
+    let normalized = normalize_project_name(name);
+
+    Ok(existing.into_iter().any(|(id, existing_name)| {
+        exclude_project_id != Some(id.as_str())
+            && normalize_project_name(&existing_name) == normalized
+    }))
+}
+
 fn validate_text(field: &str, value: &str, max_chars: usize) -> Result<String, StoreError> {
     let value = value.trim();
     if value.is_empty() {
@@ -738,6 +813,115 @@ mod tests {
                 .await
                 .is_err()
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rename_preserves_project_identity_and_history_and_rejects_invalid_names()
+    -> Result<(), Box<dyn Error>> {
+        use crate::StoreError;
+
+        let temporary = tempdir()?;
+        let workspace = temporary.path().join("workspace");
+        let other_workspace = temporary.path().join("other-workspace");
+        fs::create_dir_all(&workspace)?;
+        fs::create_dir_all(&other_workspace)?;
+        fs::write(workspace.join("README.md"), "# rename fixture\n")?;
+
+        let database = temporary.path().join("rocksoul.sqlite3");
+        let store = Store::connect(&database).await?;
+        let project = store
+            .create_project("Original name", workspace.to_str().unwrap_or_default())
+            .await?;
+        let occupied = store
+            .create_project(
+                "Occupied name",
+                other_workspace.to_str().unwrap_or_default(),
+            )
+            .await?;
+
+        let mission = store
+            .create_mission(
+                &project.id,
+                "Preserved mission",
+                "Renaming a project must not change its mission history.",
+            )
+            .await?;
+        let inspection = store.inspect_workspace(&project.id, &mission.id).await?;
+        store.approve_mission(&mission.id).await?;
+
+        let renamed = store
+            .rename_project(&project.id, "  New project name  ")
+            .await?;
+        assert_eq!(renamed.id, project.id);
+        assert_eq!(renamed.name, "New project name");
+        assert_eq!(renamed.root_path, project.root_path);
+        assert_eq!(renamed.created_at, project.created_at);
+
+        assert!(matches!(
+            store.rename_project(&project.id, " occupied NAME ").await,
+            Err(StoreError::ProjectNameConflict)
+        ));
+        assert!(matches!(
+            store.rename_project(&project.id, "   ").await,
+            Err(StoreError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            store.rename_project(&project.id, &"x".repeat(81)).await,
+            Err(StoreError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            store.rename_project("missing-project", "Valid name").await,
+            Err(StoreError::NotFound)
+        ));
+        assert!(matches!(
+            store
+                .create_project(
+                    " new PROJECT name ",
+                    other_workspace.to_str().unwrap_or_default()
+                )
+                .await,
+            Err(StoreError::ProjectNameConflict)
+        ));
+
+        let after_rejected_rename = store
+            .list_projects()
+            .await?
+            .into_iter()
+            .find(|item| item.id == project.id)
+            .expect("renamed project remains present");
+        assert_eq!(after_rejected_rename.name, "New project name");
+        assert_eq!(after_rejected_rename.root_path, project.root_path);
+
+        let missions = store.list_missions(&project.id).await?;
+        assert_eq!(missions.len(), 1);
+        assert_eq!(missions[0].id, mission.id);
+        assert_eq!(missions[0].status, "completed");
+        assert_eq!(store.list_artifacts(&mission.id).await?.len(), 1);
+        assert_eq!(
+            store.list_artifacts(&mission.id).await?[0].id,
+            inspection.artifact.id
+        );
+        assert_eq!(store.list_evidence(&mission.id).await?.len(), 2);
+        assert_eq!(
+            fs::read_to_string(workspace.join("README.md"))?,
+            "# rename fixture\n"
+        );
+
+        drop(store);
+        let reopened = Store::connect(&database).await?;
+        let restored = reopened
+            .list_projects()
+            .await?
+            .into_iter()
+            .find(|item| item.id == project.id)
+            .expect("renamed project survives restart");
+        assert_eq!(restored.name, "New project name");
+        assert_eq!(restored.root_path, project.root_path);
+        assert_eq!(reopened.list_missions(&project.id).await?.len(), 1);
+        assert_eq!(reopened.list_artifacts(&mission.id).await?.len(), 1);
+        assert_eq!(reopened.list_evidence(&mission.id).await?.len(), 2);
+        assert_ne!(occupied.id, restored.id);
         Ok(())
     }
 }
