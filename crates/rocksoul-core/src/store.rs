@@ -875,10 +875,11 @@ mod tests {
             Err(StoreError::NotFound)
         ));
         assert!(matches!(
-            store.create_project(
-                " new PROJECT name ",
-                other_workspace.to_str().unwrap_or_default()
-            )
+            store
+                .create_project(
+                    " new PROJECT name ",
+                    other_workspace.to_str().unwrap_or_default()
+                )
                 .await,
             Err(StoreError::ProjectNameConflict)
         ));
