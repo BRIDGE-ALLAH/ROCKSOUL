@@ -1,8 +1,9 @@
-use std::sync::Mutex;
+use std::{path::Path, sync::Mutex};
 
 use rocksoul_core::{Artifact, Evidence, InspectionResult, Mission, Project, Store};
 use serde::Serialize;
 use tauri::{Manager, State};
+use tracing_appender::non_blocking::WorkerGuard;
 
 mod lifecycle;
 
@@ -12,6 +13,7 @@ struct AppState {
     store: Option<Store>,
     startup_status: StartupStatus,
     lifecycle_session: Mutex<Option<LifecycleSession>>,
+    trace_guard: Mutex<Option<WorkerGuard>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -144,29 +146,57 @@ async fn approve_mission(
         .map_err(|error| error.to_string())
 }
 
-fn initialize_tracing() {
+fn initialize_tracing(log_directory: Option<&Path>) -> Option<WorkerGuard> {
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
+
+    if let Some(log_directory) = log_directory {
+        if std::fs::create_dir_all(log_directory).is_ok() {
+            let appender = tracing_appender::rolling::daily(log_directory, "rocksoul.jsonl");
+            let (writer, guard) = tracing_appender::non_blocking(appender);
+            let initialized = tracing_subscriber::fmt()
+                .json()
+                .with_env_filter(filter.clone())
+                .with_writer(writer)
+                .with_target(false)
+                .with_current_span(false)
+                .with_span_list(false)
+                .try_init()
+                .is_ok();
+            if initialized {
+                return Some(guard);
+            }
+            drop(guard);
+        }
+    }
+
+    // stderr is a best-effort fallback for development or data-directory errors.
     let _ = tracing_subscriber::fmt()
         .json()
         .with_env_filter(filter)
+        .with_writer(std::io::stderr)
         .with_target(false)
         .with_current_span(false)
         .with_span_list(false)
         .try_init();
+    None
 }
 
 pub fn run() {
-    initialize_tracing();
-    tracing::info!(
-        event = "app_startup",
-        stage = "runtime",
-        outcome = "started"
-    );
-
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            let data_dir_result = app.path().app_local_data_dir();
+            let trace_guard = match &data_dir_result {
+                Ok(data_dir) => initialize_tracing(Some(&data_dir.join("logs"))),
+                Err(_) => initialize_tracing(None),
+            };
+            tracing::info!(
+                event = "app_startup",
+                stage = "runtime",
+                outcome = "started"
+            );
+
             let mut store = None;
             let mut startup_status = StartupStatus::failed(
                 "application_data_directory_unavailable",
@@ -174,7 +204,7 @@ pub fn run() {
             );
             let mut lifecycle_session = None;
 
-            match app.path().app_local_data_dir() {
+            match data_dir_result {
                 Ok(data_dir) => {
                     let (session, recovery_warning) = match LifecycleSession::begin(&data_dir) {
                         Ok(started) => {
@@ -255,6 +285,7 @@ pub fn run() {
                 store,
                 startup_status,
                 lifecycle_session: Mutex::new(lifecycle_session),
+                trace_guard: Mutex::new(trace_guard),
             });
             Ok(())
         })
@@ -315,6 +346,11 @@ pub fn run() {
                         outcome = "failed",
                         error_code = "lifecycle_state_lock_failed"
                     ),
+                }
+
+                // Dropping the worker guard flushes queued JSON log records.
+                if let Ok(mut guard) = state.trace_guard.lock() {
+                    guard.take();
                 }
             }
         }

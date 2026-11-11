@@ -106,3 +106,5 @@ Record the app commit, Windows edition/build, WebView2 runtime, operator, date, 
 - [ ] Confirm logs contain only fixed stage/error codes and never include application-data paths, project paths, source/document contents, prompts, credentials, or tokens.
 
 A forced-termination check must be performed on a real Windows process. A WebDriver session reload is a graceful lifecycle action and is not evidence of crash detection.
+
+Structured logs are written as daily JSONL files under the app-local data directory's `logs` folder (filename prefix `rocksoul.jsonl`). The writer is flushed after the database pool is closed and the clean-shutdown marker is processed. If the log directory cannot be created, the host falls back to stderr where the platform exposes it; the UI still reports the actual database startup status.
