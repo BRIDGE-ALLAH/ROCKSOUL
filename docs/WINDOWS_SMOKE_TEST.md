@@ -88,3 +88,17 @@ npm test
 ## Release boundary
 
 This smoke test is not installer acceptance. Tauri bundling remains disabled. A releasable Windows build still needs a reproducible installer, signing and signature verification, clean-machine install, update/rollback, backup/restore, uninstall, and security/supply-chain gates. Those are tracked by the separate P0 and OPS task issues; do not treat this checklist as a substitute.
+
+## P0-F12 — Verified backup export (manual native Save dialog)
+
+- [ ] On a real Windows desktop, activate **CREATE VERIFIED BACKUP** and confirm the native Save dialog opens with the `.rocksoul-backup` bundle filter and a suggested filename.
+- [ ] Select a new destination name in a writable folder. Confirm the UI shows a busy/verification state and reports success only after Rust returns the finalized bundle.
+- [ ] Confirm the selected name is the resulting bundle directory and it contains `database.sqlite3` plus `manifest.json`.
+- [ ] Read `manifest.json`; confirm `integrityResult` is `ok`, the SHA-256 is 64 hexadecimal characters, and `databaseBytes` matches the database file size.
+- [ ] Independently calculate SHA-256 for `database.sqlite3` and compare it with the manifest value.
+- [ ] Start another backup, cancel the native Save dialog, and confirm the app returns to idle without an error or a new backup bundle.
+- [ ] Select an existing destination name; confirm the operation fails with a useful message, does not overwrite the existing bundle, and the live vault remains usable.
+- [ ] Simulate a destination permission/I/O failure where practical; confirm the partial staging folder is removed, the UI returns to idle, and the live vault remains usable.
+- [ ] Record Windows version/build, app commit, selected destination outcome, manifest/hash verification, and sanitized screenshots. Do not include private workspace contents in the evidence.
+
+WebDriver cannot control the native Windows Save dialog outside the WebView DOM. The native E2E job therefore verifies app launch and vault lifecycle but does not substitute for this manual Save-dialog acceptance.

@@ -376,6 +376,60 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .browse-button { min-height: 38px; }
 }
 
+.backup-card {
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid rgba(216,255,53,.28);
+  background: rgba(216,255,53,.035);
+}
+.backup-card > p {
+  color: #bdb7ae;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.backup-card .button {
+  width: 100%;
+  margin-top: 6px;
+}
+.backup-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--lime);
+  font: 8px var(--mono);
+}
+.backup-progress > span {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(216,255,53,.25);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: backup-spin .8s linear infinite;
+}
+@keyframes backup-spin { to { transform: rotate(360deg); } }
+.backup-result {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(216,255,53,.22);
+  overflow-wrap: anywhere;
+}
+.backup-result strong {
+  color: var(--lime);
+  font: 9px var(--mono);
+}
+.backup-result small {
+  color: #aaa4ab;
+  font: 8px/1.5 var(--mono);
+}
+.backup-result .hash-line { margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .backup-progress > span { animation: none; }
+}
+
 .folder-field {
   display: grid;
   gap: 6px;

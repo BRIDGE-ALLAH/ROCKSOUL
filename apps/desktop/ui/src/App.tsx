@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 
 type Project = {
   id: string;
@@ -48,6 +48,24 @@ type InspectionResult = {
   truncated: boolean;
 };
 
+type BackupManifest = {
+  formatVersion: number;
+  schemaVersion: number;
+  appVersion: string;
+  createdAt: string;
+  databaseFile: string;
+  integrityResult: string;
+  sha256: string;
+  databaseBytes: number;
+};
+
+type BackupResult = {
+  backupDirectory: string;
+  databasePath: string;
+  manifestPath: string;
+  manifest: BackupManifest;
+};
+
 function formatDate(value: string): string {
   return new Date(value).toLocaleString();
 }
@@ -72,6 +90,8 @@ export default function App() {
     "Create a safe, read-only inventory of this project's structure.",
   );
   const [busy, setBusy] = useState(false);
+  const [backupPhase, setBackupPhase] = useState<"idle" | "selecting" | "creating">("idle");
+  const [backupResult, setBackupResult] = useState<BackupResult | null>(null);
   const [error, setError] = useState("");
   const [vaultState, setVaultState] = useState<"preview" | "connecting" | "ready" | "error">(
     isTauri() ? "connecting" : "preview",
@@ -222,6 +242,46 @@ export default function App() {
     } catch (cause) {
       setError(String(cause));
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCreateBackup() {
+    if (!inDesktop || busy) return;
+    setBusy(true);
+    setBackupPhase("selecting");
+    setError("");
+    try {
+      desktopOnly();
+      const destinationPath = await save({
+        title: "Save a verified Rocksoul backup bundle",
+        defaultPath: "Rocksoul Backup.rocksoul-backup",
+        filters: [
+          {
+            name: "Rocksoul Backup Bundle",
+            extensions: ["rocksoul-backup"],
+          },
+        ],
+      });
+
+      // Native Save cancellation is a normal outcome: no command runs and
+      // the vault is untouched.
+      if (destinationPath === null) return;
+
+      setBackupPhase("creating");
+      setNotice("Creating and verifying a local SQLite backup...");
+      const result = await invoke<BackupResult>("create_backup_at", {
+        destinationPath,
+      });
+      setBackupResult(result);
+      setNotice(
+        `Verified backup created at ${result.backupDirectory}. Integrity: ${result.manifest.integrityResult.toUpperCase()}. SHA-256: ${result.manifest.sha256}`,
+      );
+    } catch (cause) {
+      setError(String(cause));
+      setNotice("Backup was not finalized. The live vault remains the source of truth.");
+    } finally {
+      setBackupPhase("idle");
       setBusy(false);
     }
   }
@@ -451,6 +511,40 @@ export default function App() {
               <p className="empty-note">No projects yet. Pick a folder and bring it in.</p>
             )}
           </div>
+
+          <section className="backup-card" aria-labelledby="backup-heading">
+            <div className="list-label" id="backup-heading">LOCAL VAULT / DATA SAFETY</div>
+            <p>Create a consistent SQLite snapshot with a manifest and SHA-256 digest. The workspace folder is not copied or modified.</p>
+            <button
+              className="button button-ink"
+              type="button"
+              data-testid="create-backup"
+              onClick={() => void handleCreateBackup()}
+              disabled={busy || !inDesktop || vaultState !== "ready"}
+            >
+              {backupPhase === "selecting"
+                ? "CHOOSE DESTINATION..."
+                : backupPhase === "creating"
+                  ? "VERIFYING BACKUP..."
+                  : "CREATE VERIFIED BACKUP"} <span>↗</span>
+            </button>
+            {backupPhase === "creating" && (
+              <div className="backup-progress" role="status" aria-live="polite">
+                <span />
+                Verifying snapshot integrity and SHA-256...
+              </div>
+            )}
+            {backupResult && (
+              <div className="backup-result" data-testid="backup-result" role="status">
+                <strong>BACKUP VERIFIED ✓</strong>
+                <small>{backupResult.backupDirectory}</small>
+                <small>{formatDate(backupResult.manifest.createdAt)} · Schema {backupResult.manifest.schemaVersion} · {backupResult.manifest.databaseBytes.toLocaleString()} bytes</small>
+                <small>SQLite integrity: {backupResult.manifest.integrityResult.toUpperCase()}</small>
+                <div className="hash-line">SHA-256 <code>{backupResult.manifest.sha256}</code></div>
+                <small>Manifest: {backupResult.manifestPath}</small>
+              </div>
+            )}
+          </section>
         </aside>
 
         <section className="panel floor">

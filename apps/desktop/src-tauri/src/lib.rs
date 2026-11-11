@@ -1,6 +1,6 @@
-use std::fs;
+use std::{fs, path::Path};
 
-use rocksoul_core::{Artifact, Evidence, InspectionResult, Mission, Project, Store};
+use rocksoul_core::{Artifact, BackupResult, Evidence, InspectionResult, Mission, Project, Store};
 use tauri::{Manager, State};
 
 struct AppState {
@@ -12,6 +12,18 @@ async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, Strin
     state
         .store
         .list_projects()
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
+async fn create_backup_at(
+    destination_path: String,
+    state: State<'_, AppState>,
+) -> Result<BackupResult, String> {
+    state
+        .store
+        .create_backup_at(Path::new(&destination_path))
         .await
         .map_err(|error| error.to_string())
 }
@@ -120,6 +132,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             list_projects,
+            create_backup_at,
             create_project,
             list_missions,
             create_mission,
