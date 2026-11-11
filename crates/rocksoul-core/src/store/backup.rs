@@ -94,8 +94,59 @@ impl Store {
             Utc::now().format("%Y%m%dT%H%M%SZ"),
             Uuid::new_v4()
         );
+        self.create_backup_at(&destination_directory.join(backup_name))
+            .await
+    }
+
+    /// Create a verified backup bundle at the exact destination selected by the user.
+    /// The target is a new directory whose contents are finalized atomically.
+    pub async fn create_backup_at(
+        &self,
+        destination_path: &Path,
+    ) -> Result<BackupResult, StoreError> {
+        if !destination_path.is_absolute() {
+            return Err(StoreError::Backup(
+                "The backup destination must be an absolute path.".to_string(),
+            ));
+        }
+
+        let backup_name = destination_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| StoreError::Backup("Choose a valid backup bundle name.".to_string()))?;
+        if backup_name.is_empty()
+            || backup_name.trim() != backup_name
+            || backup_name == "."
+            || backup_name == ".."
+            || backup_name.chars().any(char::is_control)
+        {
+            return Err(StoreError::Backup(
+                "Choose a valid backup bundle name without control characters.".to_string(),
+            ));
+        }
+
+        let parent = destination_path.parent().ok_or_else(|| {
+            StoreError::Backup("The backup destination must be inside a folder.".to_string())
+        })?;
+        let destination_directory = parent.canonicalize()?;
+        if !destination_directory.is_dir() {
+            return Err(StoreError::Backup(
+                "The backup destination must be inside an existing folder.".to_string(),
+            ));
+        }
+
+        let final_path = destination_directory.join(backup_name);
+        match fs::symlink_metadata(&final_path) {
+            Ok(_) => {
+                return Err(StoreError::Backup(
+                    "That backup destination already exists. Choose a new name.".to_string(),
+                ));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+
         let staging_path = destination_directory.join(format!(".{backup_name}.partial"));
-        let final_path = destination_directory.join(&backup_name);
         fs::create_dir(&staging_path)?;
         let mut staging = StagingDirectory::new(staging_path.clone());
 
@@ -342,6 +393,45 @@ mod tests {
         assert_eq!(missions[0].id, mission.id);
         assert_eq!(missions[0].title, "Verify online backup");
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_backup_at_uses_the_selected_path_and_never_overwrites()
+    -> Result<(), Box<dyn Error>> {
+        let temporary = tempdir()?;
+        let workspace = temporary.path().join("workspace");
+        fs::create_dir_all(&workspace)?;
+        fs::write(workspace.join("README.md"), "selected export fixture")?;
+
+        let store = Store::connect(&temporary.path().join("rocksoul.sqlite3")).await?;
+        let project = store
+            .create_project("Selected export", workspace.to_str().unwrap_or_default())
+            .await?;
+        let destination = temporary
+            .path()
+            .join("Chosen Rocksoul Backup.rocksoul-backup");
+
+        let backup = store.create_backup_at(&destination).await?;
+        assert_eq!(backup.backup_directory, destination);
+        assert!(backup.database_path.is_file());
+        assert!(backup.manifest_path.is_file());
+        assert_eq!(backup.manifest.integrity_result, "ok");
+        assert_eq!(backup.manifest.sha256.len(), 64);
+        assert_eq!(
+            backup.manifest.sha256,
+            format!("{:x}", Sha256::digest(fs::read(&backup.database_path)?))
+        );
+
+        let restored = Store::connect(&backup.database_path).await?;
+        let projects = restored.list_projects().await?;
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].id, project.id);
+
+        let repeated = store.create_backup_at(&destination).await;
+        assert!(matches!(repeated, Err(StoreError::Backup(_))));
+        assert!(backup.database_path.is_file());
+        assert!(backup.manifest_path.is_file());
         Ok(())
     }
 
