@@ -121,8 +121,8 @@ mod tests {
     }
 
     #[test]
-    fn marker_is_metadata_only_and_does_not_contain_application_paths()
-    -> Result<(), Box<dyn Error>> {
+    fn marker_is_metadata_only_and_does_not_contain_application_paths() -> Result<(), Box<dyn Error>>
+    {
         let directory = tempdir()?;
         let started = LifecycleSession::begin(directory.path())?;
         let marker = fs::read_to_string(&started.session.marker_path)?;
