@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 
@@ -90,6 +90,8 @@ export default function App() {
     "Create a safe, read-only inventory of this project's structure.",
   );
   const [busy, setBusy] = useState(false);
+  const browseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const backupButtonRef = useRef<HTMLButtonElement | null>(null);
   const [backupPhase, setBackupPhase] = useState<"idle" | "selecting" | "creating">("idle");
   const [backupResult, setBackupResult] = useState<BackupResult | null>(null);
   const [error, setError] = useState("");
@@ -243,6 +245,7 @@ export default function App() {
       setError(String(cause));
     } finally {
       setBusy(false);
+      requestAnimationFrame(() => browseButtonRef.current?.focus());
     }
   }
 
@@ -283,6 +286,7 @@ export default function App() {
     } finally {
       setBackupPhase("idle");
       setBusy(false);
+      requestAnimationFrame(() => backupButtonRef.current?.focus());
     }
   }
 
@@ -395,6 +399,7 @@ export default function App() {
 
   return (
     <main className="app-shell">
+      <a className="skip-link" href="#workbench">Skip to project and mission workbench</a>
       <header className="topbar">
         <a className="wordmark" href="#" aria-label="Rocksoul home">
           ROCK<span>SOUL</span><i>®</i>
@@ -434,13 +439,13 @@ export default function App() {
         </div>
       )}
 
-      <div className="status-line" role="status" data-testid="status-line">
+      <div className="status-line" role="status" aria-live="polite" aria-atomic="true" data-testid="status-line">
         <span className="status-icon">↳</span>
         {notice}
       </div>
       {error && <div className="error-banner" role="alert">{error}</div>}
 
-      <section className="workbench">
+      <section className="workbench" id="workbench" aria-label="Project, mission, and approval workbench">
         <aside className="panel wall">
           <div className="panel-heading">
             <span className="section-index">01 / THE WALL</span>
@@ -472,6 +477,7 @@ export default function App() {
                   required
                 />
                 <button
+                  ref={browseButtonRef}
                   className="browse-button"
                   type="button"
                   aria-label="Browse for an existing project folder"
@@ -516,6 +522,7 @@ export default function App() {
             <div className="list-label" id="backup-heading">LOCAL VAULT / DATA SAFETY</div>
             <p>Create a consistent SQLite snapshot with a manifest and SHA-256 digest. The workspace folder is not copied or modified.</p>
             <button
+              ref={backupButtonRef}
               className="button button-ink"
               type="button"
               data-testid="create-backup"
@@ -692,7 +699,13 @@ export default function App() {
                 <strong>{latestArtifact.title}</strong>
                 <span>{formatDate(latestArtifact.createdAt)}</span>
               </div>
-              <pre className="artifact-preview" data-testid="artifact-preview">{latestArtifact.content}</pre>
+              <pre
+                className="artifact-preview"
+                data-testid="artifact-preview"
+                tabIndex={0}
+                role="region"
+                aria-label="Workspace inventory artifact. Scroll to inspect the saved metadata."
+              >{latestArtifact.content}</pre>
               <div className="hash-line">
                 SHA-256 <code>{latestArtifact.sha256}</code>
               </div>
@@ -709,7 +722,13 @@ export default function App() {
           </div>
           <h2>SHOW THE<br />RECEIPTS<span>.</span></h2>
           {evidence.length > 0 ? (
-            <div className="evidence-list">
+            <div
+              className="evidence-list"
+              tabIndex={0}
+              role="region"
+              aria-label="Mission evidence receipts. Scroll to inspect saved evidence."
+              data-testid="evidence-list"
+            >
               {evidence.map((item) => (
                 <article className="evidence-item" data-testid="evidence-item" data-evidence-kind={item.kind} key={item.id}>
                   <div className="evidence-kind">{item.kind.replaceAll("_", " ")}</div>
