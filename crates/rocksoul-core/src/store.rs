@@ -119,7 +119,11 @@ impl Store {
 
     /// Rename a project without changing its stable ID, canonical workspace
     /// path, creation time, or any mission/artifact/evidence relationships.
-    pub async fn rename_project(&self, project_id: &str, name: &str) -> Result<Project, StoreError> {
+    pub async fn rename_project(
+        &self,
+        project_id: &str,
+        name: &str,
+    ) -> Result<Project, StoreError> {
         let name = validate_text("Project name", name, 80)?;
         let timestamp = now();
         let mut transaction = self.pool.begin().await?;
@@ -127,9 +131,7 @@ impl Store {
         // Updating first acquires SQLite's writer reservation before checking
         // duplicates, preventing concurrent create/rename operations from
         // passing the same availability check.
-        let changed = sqlx::query(
-            "UPDATE projects SET name = ?, updated_at = ? WHERE id = ?",
-        )
+        let changed = sqlx::query("UPDATE projects SET name = ?, updated_at = ? WHERE id = ?")
         .bind(&name)
         .bind(&timestamp)
         .bind(project_id)
@@ -504,10 +506,9 @@ async fn project_name_conflicts(
     name: &str,
     exclude_project_id: Option<&str>,
 ) -> Result<bool, StoreError> {
-    let existing: Vec<(String, String)> =
-        sqlx::query_as("SELECT id, name FROM projects")
-            .fetch_all(&mut **transaction)
-            .await?;
+    let existing: Vec<(String, String)> = sqlx::query_as("SELECT id, name FROM projects")
+        .fetch_all(&mut **transaction)
+        .await?;
     let normalized = normalize_project_name(name);
 
     Ok(existing.into_iter().any(|(id, existing_name)| {
