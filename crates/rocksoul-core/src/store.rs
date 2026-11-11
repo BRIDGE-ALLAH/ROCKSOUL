@@ -859,26 +859,27 @@ mod tests {
         assert_eq!(renamed.created_at, project.created_at);
 
         assert!(matches!(
-            store.rename_project(&project.id, " occupied NAME "),
+            store.rename_project(&project.id, " occupied NAME ").await,
             Err(StoreError::ProjectNameConflict)
         ));
         assert!(matches!(
-            store.rename_project(&project.id, "   "),
+            store.rename_project(&project.id, "   ").await,
             Err(StoreError::InvalidInput(_))
         ));
         assert!(matches!(
-            store.rename_project(&project.id, &"x".repeat(81)),
+            store.rename_project(&project.id, &"x".repeat(81)).await,
             Err(StoreError::InvalidInput(_))
         ));
         assert!(matches!(
-            store.rename_project("missing-project", "Valid name"),
+            store.rename_project("missing-project", "Valid name").await,
             Err(StoreError::NotFound)
         ));
         assert!(matches!(
             store.create_project(
                 " new PROJECT name ",
                 other_workspace.to_str().unwrap_or_default()
-            ),
+            )
+                .await,
             Err(StoreError::ProjectNameConflict)
         ));
 
