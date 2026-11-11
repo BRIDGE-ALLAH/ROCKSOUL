@@ -94,7 +94,8 @@ impl Store {
             Utc::now().format("%Y%m%dT%H%M%SZ"),
             Uuid::new_v4()
         );
-        self.create_backup_at(&destination_directory.join(backup_name)).await
+        self.create_backup_at(&destination_directory.join(backup_name))
+            .await
     }
 
     /// Create a verified backup bundle at the exact destination selected by the user.
@@ -112,9 +113,7 @@ impl Store {
         let backup_name = destination_path
             .file_name()
             .and_then(|name| name.to_str())
-            .ok_or_else(|| {
-                StoreError::Backup("Choose a valid backup bundle name.".to_string())
-            })?;
+            .ok_or_else(|| StoreError::Backup("Choose a valid backup bundle name.".to_string()))?;
         if backup_name.is_empty()
             || backup_name.trim() != backup_name
             || backup_name == "."
@@ -398,7 +397,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_backup_at_uses_the_selected_path_and_never_overwrites() -> Result<(), Box<dyn Error>> {
+    async fn create_backup_at_uses_the_selected_path_and_never_overwrites()
+    -> Result<(), Box<dyn Error>> {
         let temporary = tempdir()?;
         let workspace = temporary.path().join("workspace");
         fs::create_dir_all(&workspace)?;
@@ -408,7 +408,9 @@ mod tests {
         let project = store
             .create_project("Selected export", workspace.to_str().unwrap_or_default())
             .await?;
-        let destination = temporary.path().join("Chosen Rocksoul Backup.rocksoul-backup");
+        let destination = temporary
+            .path()
+            .join("Chosen Rocksoul Backup.rocksoul-backup");
 
         let backup = store.create_backup_at(&destination).await?;
         assert_eq!(backup.backup_directory, destination);
