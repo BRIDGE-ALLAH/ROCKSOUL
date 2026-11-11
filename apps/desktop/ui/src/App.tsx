@@ -8,6 +8,7 @@ type Project = {
   rootPath: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt: string | null;
 };
 
 type Mission = {
@@ -60,6 +61,7 @@ function desktopOnly(): void {
 
 export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [archivedProjects, setArchivedProjects] = useState<Project[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -95,8 +97,12 @@ export default function App() {
 
   const refreshProjects = useCallback(async (preferredProjectId?: string) => {
     desktopOnly();
-    const nextProjects = await invoke<Project[]>("list_projects");
+    const [nextProjects, nextArchivedProjects] = await Promise.all([
+      invoke<Project[]>("list_projects"),
+      invoke<Project[]>("list_archived_projects"),
+    ]);
     setProjects(nextProjects);
+    setArchivedProjects(nextArchivedProjects);
 
     const nextProjectId =
       preferredProjectId && nextProjects.some((project) => project.id === preferredProjectId)
@@ -240,6 +246,38 @@ export default function App() {
       setRootPath("");
       await refreshProjects(project.id);
       setNotice(`Project linked: ${project.name}. No workspace files were changed.`);
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleArchiveProject(project: Project) {
+    if (busy || !inDesktop) return;
+    setBusy(true);
+    setError("");
+    try {
+      desktopOnly();
+      await invoke<Project>("archive_project", { projectId: project.id });
+      await refreshProjects(project.id === projectId ? undefined : projectId);
+      setNotice(`Project archived: ${project.name}. Its folder and mission history are preserved.`);
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnarchiveProject(project: Project) {
+    if (busy || !inDesktop) return;
+    setBusy(true);
+    setError("");
+    try {
+      desktopOnly();
+      const restored = await invoke<Project>("unarchive_project", { projectId: project.id });
+      await refreshProjects(restored.id);
+      setNotice(`Project restored: ${restored.name}. Its workspace and history are unchanged.`);
     } catch (cause) {
       setError(String(cause));
     } finally {
@@ -431,24 +469,63 @@ export default function App() {
           <div className="list-label">IN THE ROOM / {projects.length}</div>
           <div className="project-list">
             {projects.map((project) => (
-              <button
-                className={project.id === projectId ? "project-item active" : "project-item"}
-                data-testid="project-item"
-                data-project-name={project.name}
-                key={project.id}
-                onClick={() => void handleSelectProject(project.id)}
-                type="button"
-              >
-                <span className="project-glyph">▧</span>
-                <span className="project-name">
-                  {project.name}
-                  <small>{project.rootPath}</small>
-                </span>
-                <span className="project-arrow">↗</span>
-              </button>
+              <div className="project-row" key={project.id} data-testid="project-row">
+                <button
+                  className={project.id === projectId ? "project-item active" : "project-item"}
+                  data-testid="project-item"
+                  data-project-name={project.name}
+                  onClick={() => void handleSelectProject(project.id)}
+                  type="button"
+                >
+                  <span className="project-glyph">▧</span>
+                  <span className="project-name">
+                    {project.name}
+                    <small>{project.rootPath}</small>
+                  </span>
+                  <span className="project-arrow">↗</span>
+                </button>
+                <button
+                  className="project-action"
+                  type="button"
+                  data-testid="archive-project"
+                  aria-label={`Archive ${project.name}`}
+                  onClick={() => void handleArchiveProject(project)}
+                  disabled={busy || !inDesktop}
+                >
+                  ARCHIVE
+                </button>
+              </div>
             ))}
             {projects.length === 0 && (
-              <p className="empty-note">No projects yet. Pick a folder and bring it in.</p>
+              <p className="empty-note">No active projects. Link a folder or restore one from storage.</p>
+            )}
+          </div>
+
+          <div className="list-label">IN STORAGE / {archivedProjects.length}</div>
+          <div className="project-list">
+            {archivedProjects.map((project) => (
+              <div className="project-row" key={project.id} data-testid="archived-project-row">
+                <div className="project-archive-summary">
+                  <span className="project-glyph">▱</span>
+                  <span className="project-name">
+                    {project.name}
+                    <small>ARCHIVED · {project.rootPath}</small>
+                  </span>
+                </div>
+                <button
+                  className="project-action restore"
+                  type="button"
+                  data-testid="unarchive-project"
+                  aria-label={`Restore ${project.name}`}
+                  onClick={() => void handleUnarchiveProject(project)}
+                  disabled={busy || !inDesktop}
+                >
+                  RESTORE
+                </button>
+              </div>
+            ))}
+            {archivedProjects.length === 0 && (
+              <p className="empty-note">Nothing in storage. Archive inactive projects to clear the active list.</p>
             )}
           </div>
         </aside>
