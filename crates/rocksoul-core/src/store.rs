@@ -834,7 +834,10 @@ mod tests {
             .create_project("Original name", workspace.to_str().unwrap_or_default())
             .await?;
         let occupied = store
-            .create_project("Occupied name", other_workspace.to_str().unwrap_or_default())
+            .create_project(
+                "Occupied name",
+                other_workspace.to_str().unwrap_or_default(),
+            )
             .await?;
 
         let mission = store
@@ -847,7 +850,9 @@ mod tests {
         let inspection = store.inspect_workspace(&project.id, &mission.id).await?;
         store.approve_mission(&mission.id).await?;
 
-        let renamed = store.rename_project(&project.id, "  New project name  ").await?;
+        let renamed = store
+            .rename_project(&project.id, "  New project name  ")
+            .await?;
         assert_eq!(renamed.id, project.id);
         assert_eq!(renamed.name, "New project name");
         assert_eq!(renamed.root_path, project.root_path);
@@ -870,7 +875,10 @@ mod tests {
             Err(StoreError::NotFound)
         ));
         assert!(matches!(
-            store.create_project(" new PROJECT name ", other_workspace.to_str().unwrap_or_default()),
+            store.create_project(
+                " new PROJECT name ",
+                other_workspace.to_str().unwrap_or_default()
+            ),
             Err(StoreError::ProjectNameConflict)
         ));
 
@@ -888,7 +896,10 @@ mod tests {
         assert_eq!(missions[0].id, mission.id);
         assert_eq!(missions[0].status, "completed");
         assert_eq!(store.list_artifacts(&mission.id).await?.len(), 1);
-        assert_eq!(store.list_artifacts(&mission.id).await?[0].id, inspection.artifact.id);
+        assert_eq!(
+            store.list_artifacts(&mission.id).await?[0].id,
+            inspection.artifact.id
+        );
         assert_eq!(store.list_evidence(&mission.id).await?.len(), 2);
         assert_eq!(
             fs::read_to_string(workspace.join("README.md"))?,
@@ -911,5 +922,4 @@ mod tests {
         assert_ne!(occupied.id, restored.id);
         Ok(())
     }
-
 }
