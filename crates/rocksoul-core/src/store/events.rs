@@ -323,28 +323,21 @@ fn validate_event_payload(event_type: EventType, payload: &Value) -> Result<(), 
             | (EventType::BackupCreated, "backup_size_bytes")
             | (EventType::BackupCreated, "schema_version") => value.as_u64().is_some(),
             (EventType::ProjectArchived, "reason_code")
-            | (EventType::ProjectRestored, "reason_code") => value
-                .as_str()
-                .is_some_and(|text| {
-                    !text.is_empty()
-                        && text.len() <= 32
-                        && text
-                            .chars()
-                            .all(|character| character.is_ascii_lowercase()
-                                || character.is_ascii_digit()
-                                || matches!(character, '.' | '_' | '-'))
-                }),
+            | (EventType::ProjectRestored, "reason_code") => value.as_str().is_some_and(|text| {
+                !text.is_empty()
+                    && text.len() <= 32
+                    && text.chars().all(|character| {
+                        character.is_ascii_lowercase()
+                            || character.is_ascii_digit()
+                            || matches!(character, '.' | '_' | '-')
+                    })
+            }),
             (EventType::MissionInspected, "truncated")
             | (EventType::MissionApproved, "approved") => value.is_boolean(),
             (EventType::MissionInspected, "artifact_sha256")
-            | (EventType::BackupCreated, "backup_sha256") => value
-                .as_str()
-                .is_some_and(|hash| {
-                    hash.len() == 64
-                        && hash
-                            .bytes()
-                            .all(|byte| byte.is_ascii_hexdigit())
-                }),
+            | (EventType::BackupCreated, "backup_sha256") => value.as_str().is_some_and(|hash| {
+                hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+            }),
             _ => false,
         };
 
