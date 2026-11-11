@@ -47,6 +47,19 @@ fn unavailable_store_error() -> String {
         .to_string()
 }
 
+fn startup_status_for_result(
+    result: Result<Store, rocksoul_core::StoreError>,
+    recovery_warning: Option<String>,
+) -> (Option<Store>, StartupStatus) {
+    match result {
+        Ok(store) => (Some(store), StartupStatus::ready(recovery_warning)),
+        Err(error) => (
+            None,
+            StartupStatus::failed(safe_store_error_code(&error), recovery_warning),
+        ),
+    }
+}
+
 #[tauri::command]
 fn get_startup_status(state: State<'_, AppState>) -> StartupStatus {
     state.startup_status.clone()
@@ -240,30 +253,29 @@ pub fn run() {
                         stage = "database_open_and_migrate",
                         outcome = "started"
                     );
-                    match tauri::async_runtime::block_on(Store::connect(&database_path)) {
-                        Ok(connected) => {
-                            tracing::info!(
-                                event = "app_startup",
-                                stage = "database_open_and_migrate",
-                                outcome = "succeeded"
-                            );
-                            store = Some(connected);
-                            startup_status = StartupStatus::ready(recovery_warning);
-                        }
-                        Err(error) => {
-                            let error_code = safe_store_error_code(&error);
-                            tracing::error!(
-                                event = "app_startup",
-                                stage = "database_open_and_migrate",
-                                outcome = "failed",
-                                error_code
-                            );
-                            startup_status = StartupStatus::failed(
-                                error_code,
-                                recovery_warning,
-                            );
-                        }
+                    let result =
+                        tauri::async_runtime::block_on(Store::connect(&database_path));
+                    let (connected_store, status) =
+                        startup_status_for_result(result, recovery_warning);
+                    if status.phase == "ready" {
+                        tracing::info!(
+                            event = "app_startup",
+                            stage = "database_open_and_migrate",
+                            outcome = "succeeded"
+                        );
+                    } else {
+                        tracing::error!(
+                            event = "app_startup",
+                            stage = "database_open_and_migrate",
+                            outcome = "failed",
+                            error_code = status
+                                .error_code
+                                .as_deref()
+                                .unwrap_or("database_startup_failed")
+                        );
                     }
+                    store = connected_store;
+                    startup_status = status;
                 }
                 Err(_) => {
                     tracing::error!(
@@ -355,4 +367,37 @@ pub fn run() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn database_open_failure_never_exposes_a_store_or_ready_status() -> Result<(), Box<dyn std::error::Error>> {
+        let temporary = tempfile::tempdir()?;
+        let database_path_is_a_directory = temporary.path().join("not-a-database.sqlite3");
+        std::fs::create_dir(&database_path_is_a_directory)?;
+
+        let open_result =
+            tauri::async_runtime::block_on(Store::connect(&database_path_is_a_directory));
+        assert!(open_result.is_err(), "a directory cannot be opened as the SQLite database");
+
+        let (store, status) = startup_status_for_result(
+            open_result,
+            Some("previous-session marker was present".to_string()),
+        );
+
+        assert!(store.is_none());
+        assert_eq!(status.phase, "failed");
+        assert_eq!(
+            status.error_code.as_deref(),
+            Some("database_connection_failed")
+        );
+        assert_eq!(
+            status.recovery_warning.as_deref(),
+            Some("previous-session marker was present")
+        );
+        Ok(())
+    }
 }
