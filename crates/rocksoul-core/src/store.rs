@@ -17,8 +17,10 @@ use sqlx::{
 use uuid::Uuid;
 
 mod backup;
+mod events;
 
 pub use backup::{BackupManifest, BackupResult};
+pub use events::{EventActorType, EventDraft, EventRecord, EventSubjectType, EventType};
 
 use crate::{Artifact, Evidence, InspectionResult, Mission, Project, StoreError};
 
