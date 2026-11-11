@@ -132,12 +132,12 @@ impl Store {
         // duplicates, preventing concurrent create/rename operations from
         // passing the same availability check.
         let changed = sqlx::query("UPDATE projects SET name = ?, updated_at = ? WHERE id = ?")
-        .bind(&name)
-        .bind(&timestamp)
-        .bind(project_id)
-        .execute(&mut *transaction)
-        .await?
-        .rows_affected();
+            .bind(&name)
+            .bind(&timestamp)
+            .bind(project_id)
+            .execute(&mut *transaction)
+            .await?
+            .rows_affected();
 
         if changed != 1 {
             transaction.rollback().await?;
