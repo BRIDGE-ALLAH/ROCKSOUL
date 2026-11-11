@@ -100,8 +100,19 @@ describe("Rocksoul Windows desktop — local mission lifecycle", () => {
     await waitFor(projectSelector, "new local project");
 
     await focusSelector(testId("mission-title"));
+    // The form intentionally starts with a suggested title. Replace it using
+    // keyboard input rather than appending to the existing value.
+    await browser.keys("\uE009a");
+    await browser.keys("\uE017");
     await browser.keys(missionTitle);
+    const enteredMissionTitle = await browser.execute(() => {
+      const field = document.querySelector('[data-testid="mission-title"]');
+      return field instanceof HTMLInputElement ? field.value : null;
+    });
+    assert.equal(enteredMissionTitle, missionTitle);
     await tabTo("mission-objective");
+    await browser.keys("\uE009a");
+    await browser.keys("\uE017");
     await browser.keys(
       "Inventory metadata only, preserve the workspace, and prove that approval survives an application restart.",
     );
