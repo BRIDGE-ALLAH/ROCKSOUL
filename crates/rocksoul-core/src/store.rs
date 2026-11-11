@@ -162,6 +162,53 @@ impl Store {
         Ok(mission)
     }
 
+    /// Edit the title/objective only while the persisted mission is still a draft.
+    /// The conditional UPDATE closes the race with a concurrent mission transition.
+    pub async fn update_draft_mission(
+        &self,
+        mission_id: &str,
+        title: &str,
+        objective: &str,
+    ) -> Result<Mission, StoreError> {
+        let title = validate_text("Mission title", title, 120)?;
+        let objective = validate_text("Mission objective", objective, 2_000)?;
+        let timestamp = now();
+
+        let changed = sqlx::query(
+            "UPDATE missions SET title = ?, objective = ?, updated_at = ?
+             WHERE id = ? AND status = 'draft'",
+        )
+        .bind(&title)
+        .bind(&objective)
+        .bind(&timestamp)
+        .bind(mission_id)
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+
+        if changed != 1 {
+            let status: Option<String> = sqlx::query_scalar(
+                "SELECT status FROM missions WHERE id = ?",
+            )
+            .bind(mission_id)
+            .fetch_optional(&self.pool)
+            .await?;
+
+            return match status {
+                None => Err(StoreError::NotFound),
+                Some(_) => Err(StoreError::MissionNotEditable),
+            };
+        }
+
+        Ok(sqlx::query_as::<_, Mission>(
+            "SELECT id, project_id, title, objective, status, created_at, updated_at
+             FROM missions WHERE id = ?",
+        )
+        .bind(mission_id)
+        .fetch_one(&self.pool)
+        .await?)
+    }
+
     pub async fn list_artifacts(&self, mission_id: &str) -> Result<Vec<Artifact>, StoreError> {
         Ok(sqlx::query_as::<_, Artifact>(
             "SELECT id, mission_id, kind, title, content, sha256, created_at FROM artifacts WHERE mission_id = ? ORDER BY created_at DESC",
@@ -740,4 +787,82 @@ mod tests {
         );
         Ok(())
     }
+
+    #[tokio::test]
+    async fn only_draft_missions_can_be_edited_and_saved_across_restart()
+    -> Result<(), Box<dyn Error>> {
+        use crate::StoreError;
+
+        let temporary = tempdir()?;
+        let workspace = temporary.path().join("workspace");
+        fs::create_dir_all(&workspace)?;
+        fs::write(workspace.join("README.md"), "mission edit fixture")?;
+        let database = temporary.path().join("rocksoul.sqlite3");
+        let store = Store::connect(&database).await?;
+        let project = store
+            .create_project("Mission editing", workspace.to_str().unwrap_or_default())
+            .await?;
+        let mission = store
+            .create_mission(&project.id, "Original title", "Original objective.")
+            .await?;
+
+        assert!(matches!(
+            store.update_draft_mission(&mission.id, " ", "Valid objective.").await,
+            Err(StoreError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            store.update_draft_mission(&mission.id, &"x".repeat(121), "Valid objective.").await,
+            Err(StoreError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            store.update_draft_mission(&mission.id, "Valid title", " ").await,
+            Err(StoreError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            store.update_draft_mission("missing-mission", "Valid title", "Valid objective.").await,
+            Err(StoreError::NotFound)
+        ));
+
+        let updated = store
+            .update_draft_mission(
+                &mission.id,
+                "  Corrected title  ",
+                "  Revised objective with a clear outcome.  ",
+            )
+            .await?;
+        assert_eq!(updated.id, mission.id);
+        assert_eq!(updated.project_id, mission.project_id);
+        assert_eq!(updated.title, "Corrected title");
+        assert_eq!(updated.objective, "Revised objective with a clear outcome.");
+        assert_eq!(updated.created_at, mission.created_at);
+        assert_eq!(updated.status, "draft");
+
+        drop(store);
+        let reopened = Store::connect(&database).await?;
+        let persisted = reopened.list_missions(&project.id).await?;
+        assert_eq!(persisted.len(), 1);
+        assert_eq!(persisted[0].id, mission.id);
+        assert_eq!(persisted[0].title, "Corrected title");
+        assert_eq!(persisted[0].objective, "Revised objective with a clear outcome.");
+
+        let inspection = reopened.inspect_workspace(&project.id, &mission.id).await?;
+        assert_eq!(inspection.artifact.mission_id, mission.id);
+        let approved = reopened.approve_mission(&mission.id).await?;
+        assert_eq!(approved.status, "completed");
+        assert!(matches!(
+            reopened
+                .update_draft_mission(&mission.id, "Too late", "This must not change.")
+                .await,
+            Err(StoreError::MissionNotEditable)
+        ));
+        assert_eq!(reopened.list_artifacts(&mission.id).await?.len(), 1);
+        assert_eq!(reopened.list_evidence(&mission.id).await?.len(), 2);
+        let after_rejected_edit = reopened.list_missions(&project.id).await?;
+        assert_eq!(after_rejected_edit[0].id, mission.id);
+        assert_eq!(after_rejected_edit[0].title, "Corrected title");
+        assert_eq!(after_rejected_edit[0].objective, "Revised objective with a clear outcome.");
+        assert_eq!(after_rejected_edit[0].status, "completed");
+        Ok(())
+    }
+
 }

@@ -56,6 +56,20 @@ async fn create_mission(
 }
 
 #[tauri::command(rename_all = "camelCase")]
+async fn update_draft_mission(
+    mission_id: String,
+    title: String,
+    objective: String,
+    state: State<'_, AppState>,
+) -> Result<Mission, String> {
+    state
+        .store
+        .update_draft_mission(&mission_id, &title, &objective)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "camelCase")]
 async fn inspect_workspace(
     project_id: String,
     mission_id: String,
@@ -123,6 +137,7 @@ pub fn run() {
             create_project,
             list_missions,
             create_mission,
+            update_draft_mission,
             inspect_workspace,
             approve_mission,
             list_artifacts,
