@@ -16,6 +16,7 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -43,13 +44,19 @@ def validate_exceptions(policy: dict[str, Any], today: date) -> list[str]:
         if not isinstance(items, list):
             errors.append(f"Policy field {key} must be an array.")
             continue
+        identity_fields = (
+            ("component", "version", "license")
+            if key == "license_exceptions"
+            else ("vulnerability_id", "package", "version")
+        )
         for index, item in enumerate(items):
             if not isinstance(item, dict):
                 errors.append(f"{key}[{index}] must be an object.")
                 continue
+            required_fields = (*identity_fields, "rationale", "owner", "expires")
             missing = [
                 field
-                for field in ("rationale", "owner", "expires")
+                for field in required_fields
                 if not str(item.get(field, "")).strip()
             ]
             if missing:
@@ -149,8 +156,6 @@ def assess_licenses(
             subject = f"{name}@{version} ({expression})"
             if status == "disallowed":
                 errors.append(f"Disallowed license: {subject}.")
-            elif status == "review" and not exception:
-                counts["review-required"] += 0
     return counts, errors
 
 
@@ -217,6 +222,16 @@ def build_report(
     packages = sbom.get("components", []) or []
     descriptor = grype.get("descriptor", {}) or {}
     db = descriptor.get("db", {}) or {}
+    db_status = db.get("status", {}) if isinstance(db, dict) else {}
+    if not isinstance(db_status, dict):
+        db_status = {}
+    db_source = db_status.get("from", "not reported")
+    checksum_values = (
+        parse_qs(urlparse(str(db_source)).query).get("checksum", [])
+        if db_source != "not reported"
+        else []
+    )
+    db_checksum = checksum_values[0] if checksum_values else "not reported"
     lines = [
         "# ROCKSOUL supply-chain report",
         "",
@@ -226,9 +241,10 @@ def build_report(
         f"- Components recorded: {len(packages)}",
         f"- Syft version requested: {os.environ.get('SYFT_VERSION', 'not recorded')}",
         f"- Grype version reported: {descriptor.get('version', os.environ.get('GRYPE_VERSION', 'not recorded'))}",
-        f"- Grype database built: {db.get('built', 'not reported')}",
-        f"- Grype database status: {db.get('status', 'not reported')}",
-        f"- Grype database checksum: {db.get('checksum', 'not reported')}",
+        f"- Grype database built: {db_status.get('built', 'not reported')}",
+        f"- Grype database schema: {db_status.get('schemaVersion', 'not reported')}",
+        f"- Grype database valid: {db_status.get('valid', 'not reported')}",
+        f"- Grype database checksum: {db_checksum}",
         "",
         "## License inventory",
         "",
