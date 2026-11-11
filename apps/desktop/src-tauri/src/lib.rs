@@ -68,7 +68,10 @@ fn get_startup_status(state: State<'_, AppState>) -> StartupStatus {
 #[tauri::command]
 async fn list_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
     let store = state.store.as_ref().ok_or_else(unavailable_store_error)?;
-    store.list_projects().await.map_err(|error| error.to_string())
+    store
+        .list_projects()
+        .await
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command(rename_all = "camelCase")]
@@ -374,14 +377,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn database_open_failure_never_exposes_a_store_or_ready_status() -> Result<(), Box<dyn std::error::Error>> {
+    fn database_open_failure_never_exposes_a_store_or_ready_status()
+    -> Result<(), Box<dyn std::error::Error>> {
         let temporary = tempfile::tempdir()?;
         let database_path_is_a_directory = temporary.path().join("not-a-database.sqlite3");
         std::fs::create_dir(&database_path_is_a_directory)?;
 
         let open_result =
             tauri::async_runtime::block_on(Store::connect(&database_path_is_a_directory));
-        assert!(open_result.is_err(), "a directory cannot be opened as the SQLite database");
+        assert!(
+            open_result.is_err(),
+            "a directory cannot be opened as the SQLite database"
+        );
 
         let (store, status) = startup_status_for_result(
             open_result,

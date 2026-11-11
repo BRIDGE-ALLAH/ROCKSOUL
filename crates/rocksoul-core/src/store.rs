@@ -811,5 +811,4 @@ mod tests {
         assert!(store.list_projects().await.is_err());
         Ok(())
     }
-
 }
