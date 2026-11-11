@@ -1,0 +1,95 @@
+name: Supply Chain
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "docs/**"
+      - "test/**"
+      - "ops/**"
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  inventory-and-vulnerability-scan:
+    name: SBOM, license policy, and vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SYFT_VERSION: v1.57.1
+      GRYPE_VERSION: v0.118.0
+      RELEASE_GATE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@1.99.0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Resolve Rust and Bun dependency lock snapshots
+        shell: bash
+        run: |
+          cargo generate-lockfile --manifest-path Cargo.toml
+          bun install --ignore-scripts
+
+          test -s Cargo.lock
+          test -s bun.lock
+          cargo metadata --locked --format-version 1 > cargo-metadata.json
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: rocksoul.cdx.json
+          syft-version: v1.57.1
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Scan the SBOM with Grype
+        uses: anchore/scan-action@v7.4.2
+        with:
+          sbom: rocksoul.cdx.json
+          grype-version: v0.118.0
+          output-format: json
+          output-file: grype.json
+          fail-build: false
+          severity-cutoff: high
+
+      - name: Test supply-chain policy rules
+        run: python -m unittest discover -s scripts/tests -v
+
+      - name: Enforce license and vulnerability policy
+        env:
+          RELEASE_GATE: ${{ env.RELEASE_GATE }}
+          SYFT_VERSION: ${{ env.SYFT_VERSION }}
+          GRYPE_VERSION: ${{ env.GRYPE_VERSION }}
+        run: python scripts/supply_chain_policy.py --sbom rocksoul.cdx.json --grype grype.json --policy .github/supply-chain/policy.json --report supply-chain-report.md
+
+      - name: Upload inspectable dependency evidence
+        if: always() && hashFiles('rocksoul.cdx.json', 'grype.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocksoul-supply-chain-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            rocksoul.cdx.json
+            grype.json
+            supply-chain-report.md
+            Cargo.lock
+            bun.lock
+            cargo-metadata.json
+          if-no-files-found: warn
+          retention-days: 90

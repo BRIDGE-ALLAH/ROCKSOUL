@@ -1,0 +1,23 @@
+{
+  "approved_spdx": [
+    "0BSD",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "Unlicense",
+    "Zlib"
+  ],
+  "disallowed_prefixes": [
+    "AGPL-",
+    "GPL-",
+    "SSPL-"
+  ],
+  "disallowed_exact": [
+    "BUSL-1.1"
+  ],
+  "license_exceptions": [],
+  "vulnerability_exceptions": []
+}
